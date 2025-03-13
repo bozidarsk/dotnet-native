@@ -1,0 +1,112 @@
+<!--
+
+DEBUG
+BITS32 (default is 64bit arch)
+BIGENDIAN (default is le)
+CASTCACHE
+EASYINTEROP
+TARGET_AMD64 (or TARGET_X86 or TARGET_ARM64 or TARGET_ARM)
+
+CS8603 (possible null reference return)
+CS8604 (possible null reference argument)
+CS8618 (non-nullable property must contain a non-null value when exiting constructor)
+CS8625 (cannot convert null literal to non-null reference type)
+CS0164 (this label has not been referenced)
+CS0649 (field is never assigned and it will have its default value)
+
+TODO:
+does floor ceil accept negative numbers?
+DM for every f(x)
+pow with negative numbers as arguments
+
+-->
+
+
+<Project DefaultTargets="Build" InitialTargets="MakeDirectories">
+
+	<PropertyGroup>
+		<Configuration>Release</Configuration> <!-- Release|Debug -->
+		<DotnetVersion>8.0.0</DotnetVersion> <!-- $([System.Environment]::Version) -->
+		<DotnetPath>~/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>
+		<Platform>x64</Platform>
+		<ASMFLAGS>-f elf64</ASMFLAGS>
+		<ILCFLAGS>--targetos linux --targetarch x64 --instruction-set x86-x64 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --systemmodule dotnet --nativelib --multifile</ILCFLAGS>
+		<BIN>$(MSBuildThisFileDir)bin</BIN>
+	</PropertyGroup>
+
+	<Target Name="MakeDirectories" Outputs="$(BIN)">
+		<MakeDir Directories="$(BIN)"/>
+	</Target>
+
+	<Target Name="Clean">
+		<RemoveDir Directories="$(BIN)"/>
+	</Target>
+
+	<Target Name="Build" Inputs="@(Compile);@(Assemble)" Outputs="$(BIN)/dotnet.dll;$(BIN)/libdotnet.a">
+		<PropertyGroup>
+			<ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
+			<DefineConstants>EASYINTEROP;TARGET_AMD64</DefineConstants>
+			<!-- <DefineConstants>INPLACE_RUNTIME;SYSTEM_PRIVATE_CORELIB;FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;TARGET_UNIX;TARGET_64BIT;TARGET_AMD64;FEATURE_PERFTRACING;FEATURE_COMWRAPPERS;NATIVEAOT;NETCOREAPP;TRACE;TARGET_64BIT;TARGET_UNIX;TARGET_LINUX;NET;NET8_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER</DefineConstants> -->
+			<DisabledWarnings>CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
+			<!-- <DisabledWarnings>1701;1702;1705;1591;CS8969;0419;0649;CA2249;CA1830;CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765;CA1810;CA1823;CA1825;CA1852;CA2208;SA1129;SA1205;SA1400;SA1517;IDE0065;CS3016;AD0001;NU5105;1701;1702</DisabledWarnings> -->
+			<FileAlignment>512</FileAlignment>
+			<GenerateFullPaths>true</GenerateFullPaths>
+			<HighEntropyVA>true</HighEntropyVA>
+			<LangVersion>latest</LangVersion>
+			<RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+			<WarningLevel>9999</WarningLevel>
+		</PropertyGroup>
+
+		<Message Text="Building runtime..." Importance="High"/>
+
+		<Csc 
+			Sources="@(Compile)"
+			TargetType="library"
+			OutputAssembly="$(BIN)/dotnet.dll"
+			References=""
+
+			ChecksumAlgorithm="$(ChecksumAlgorithm)"
+			DefineConstants="$(DefineConstants)"
+			DisabledWarnings="$(DisabledWarnings)"
+			FileAlignment="$(FileAlignment)"
+			GenerateFullPaths="$(GenerateFullPaths)"
+			HighEntropyVA="$(HighEntropyVA)"
+			LangVersion="$(LangVersion)"
+			Platform="$(Platform)"
+			RuntimeMetadataVersion="$(RuntimeMetadataVersion)"
+			WarningLevel="$(WarningLevel)"
+
+			AllowUnsafeBlocks="true"
+			CheckForOverflowUnderflow="false"
+			DebugType="portable"
+			Deterministic="true"
+			NoConfig="true"
+			NoLogo="true"
+			NoStandardLib="true"
+			NoWin32Manifest="true"
+			Nullable="enable"
+			Optimize="true"
+		/>
+		<Message Text="Runtime -> $(BIN)/dotnet.dll" Importance="High"/>
+
+		<Exec Command="$(DotnetPath)/tools/ilc $(BIN)/dotnet.dll -o $(BIN)/dotnet.o --map $(BIN)/dotnet.xml $(ILCFLAGS)"/>
+		<Message Text="           $(BIN)/dotnet.o" Importance="High"/>
+
+		<Exec Command="nasm %(Assemble.Identity) -o $(BIN)/$([System.IO.Path]::GetFileName('%(Assemble.Identity)')).o $(ASMFLAGS)"/>
+		<Message Text="           $(BIN)/$([System.IO.Path]::GetFileName('%(Assemble.Identity)')).o" Importance="High"/>
+
+		<Exec Command="ar rcs $(BIN)/libdotnet.a $(BIN)/*.o"/>
+		<Message Text="           $(BIN)/libdotnet.a" Importance="High"/>
+	</Target>
+
+	<ItemGroup>
+		<Compile Include="$(MSBuildThisFileDirectory)System/**/*.cs"/>
+		<Compile Include="$(MSBuildThisFileDirectory)Internal/**/*.cs"/>
+		<!-- <Compile Include="../ManagedOS/dotnet/**/*.cs"/> -->
+	</ItemGroup>
+
+	<ItemGroup>
+		<Assemble Include="$(MSBuildThisFileDirectory)arch/$(Platform)/*.asm"/>
+	</ItemGroup>
+
+</Project>
