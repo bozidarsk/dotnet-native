@@ -46,9 +46,7 @@ pow with negative numbers as arguments
 		<PropertyGroup>
 			<ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
 			<DefineConstants>EASYINTEROP;TARGET_AMD64</DefineConstants>
-			<!-- <DefineConstants>INPLACE_RUNTIME;SYSTEM_PRIVATE_CORELIB;FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;TARGET_UNIX;TARGET_64BIT;TARGET_AMD64;FEATURE_PERFTRACING;FEATURE_COMWRAPPERS;NATIVEAOT;NETCOREAPP;TRACE;TARGET_64BIT;TARGET_UNIX;TARGET_LINUX;NET;NET8_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER</DefineConstants> -->
 			<DisabledWarnings>CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
-			<!-- <DisabledWarnings>1701;1702;1705;1591;CS8969;0419;0649;CA2249;CA1830;CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765;CA1810;CA1823;CA1825;CA1852;CA2208;SA1129;SA1205;SA1400;SA1517;IDE0065;CS3016;AD0001;NU5105;1701;1702</DisabledWarnings> -->
 			<FileAlignment>512</FileAlignment>
 			<GenerateFullPaths>true</GenerateFullPaths>
 			<HighEntropyVA>true</HighEntropyVA>
@@ -102,7 +100,6 @@ pow with negative numbers as arguments
 	<ItemGroup>
 		<Compile Include="$(MSBuildThisFileDirectory)System/**/*.cs"/>
 		<Compile Include="$(MSBuildThisFileDirectory)Internal/**/*.cs"/>
-		<!-- <Compile Include="../ManagedOS/dotnet/**/*.cs"/> -->
 	</ItemGroup>
 
 	<ItemGroup>
