@@ -17,7 +17,8 @@ CS0649 (field is never assigned and it will have its default value)
 TODO:
 does floor ceil accept negative numbers?
 DM for every f(x)
-pow with negative numbers as arguments
+cleanup files: RH.cs DispatchResolve.cs TransitionBlock.cs InternalCalls.cs MethodTable.cs TypeCast.cs InteropHelpers.cs
+Object.cs GetHashCode => (MethodTable*)->HashCode;
 
 -->
 
