@@ -33,24 +33,23 @@ internal unsafe struct TypeManager
 	public ReadyToRunHeader* ReadyToRunHeader;
 	private byte* pStaticsGCDataSection;
 	private byte* pThreadStaticsDataSection;
-	private void** pClasslibFunctions;
+	private nint* pClasslibFunctions;
 	private uint nClasslibFunctions;
 
-	public nint GetModuleSection(ReadyToRunSectionType sectionId, int* length) 
+	public nint GetModuleSection(ReadyToRunSectionType sectionId, out int length) 
 	{
-		ModuleInfoRow* pModuleInfoRows = (ModuleInfoRow*)(ReadyToRunHeader + 1);
+		ModuleInfoRow* rows = (ModuleInfoRow*)(this.ReadyToRunHeader + 1);
 
-		for (int i = 0; i < ReadyToRunHeader->NumberOfSections; i++) 
+		for (int i = 0; i < this.ReadyToRunHeader->NumberOfSections; i++) 
 		{
-			ModuleInfoRow* pCurrent = pModuleInfoRows + i;
-			if ((int)sectionId == pCurrent->SectionId) 
+			if (sectionId == rows[i].SectionId) 
 			{
-				*length = pCurrent->Length;
-				return pCurrent->Start;
+				length = rows[i].Length;
+				return rows[i].Start;
 			}
 		}
 
-		*length = 0;
+		length = 0;
 		return 0;
 	}
 
@@ -61,6 +60,25 @@ internal unsafe struct TypeManager
 		if (id >= nClasslibFunctions)
 			return (void*)0;
 
-		return pClasslibFunctions[id];
+		return (void*)pClasslibFunctions[id];
+	}
+
+	internal TypeManager(nint osModule, nint pModuleHeader, nint* pClasslibFunctions, uint nClasslibFunctions) 
+	{
+		this.ReadyToRunHeader = (ReadyToRunHeader*)pModuleHeader;
+
+		if (
+			ReadyToRunHeader->Signature != ReadyToRunHeaderConstants.Signature
+			|| ReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants.CurrentMajorVersion
+			|| ReadyToRunHeader->MinorVersion != ReadyToRunHeaderConstants.CurrentMinorVersion
+		) Environment.FailFast("ReadyToRunHeader with invalid constants.");
+
+		this.OsHandle = osModule;
+		this.pClasslibFunctions = pClasslibFunctions;
+		this.nClasslibFunctions = nClasslibFunctions;
+
+		int length;
+		this.pStaticsGCDataSection = (byte*)GetModuleSection(ReadyToRunSectionType.GCStaticRegion, out length);
+		this.pThreadStaticsDataSection = (byte*)GetModuleSection(ReadyToRunSectionType.ThreadStaticRegion, out length);
 	}
 }

@@ -18,18 +18,18 @@ internal struct ReadyToRunHeader
 	public ushort MajorVersion;
 	public ushort MinorVersion;
 
-	public uint Flags;
+	public ReadyToRunHeaderFlags Flags;
 
 	public ushort NumberOfSections;
 	public byte EntrySize;
 	public byte EntryType;
-};
+}
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct ModuleInfoRow 
 {
-	public int SectionId;
-	public int Flags;
+	public ReadyToRunSectionType SectionId;
+	public ModuleInfoFlags Flags;
 	public IntPtr Start;
 	public IntPtr End;
 
@@ -37,7 +37,20 @@ internal struct ModuleInfoRow
 	public int Length => (int)((ulong)End - (ulong)Start);
 }
 
-public enum ReadyToRunSectionType 
+[Flags]
+public enum ReadyToRunHeaderFlags : uint
+{
+	PlatformNeutralSource = 0x00000001,
+	Composite = 0x00000002,
+	Partial = 0x00000004,
+	NonsharedPinvokeStubs = 0x00000008,
+	EmbeddedMsil = 0x00000010,
+	Component = 0x00000020,
+	MultimoduleVersionBubble = 0x00000040,
+	UnrelatedR2rCode = 0x00000080,
+}
+
+public enum ReadyToRunSectionType : int
 {
 	CompilerIdentifier = 100,
 	ImportSections = 101,
