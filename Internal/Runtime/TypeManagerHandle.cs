@@ -4,6 +4,13 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime;
 
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct TypeManagerSlot 
+{
+	public TypeManagerHandle TypeManager;
+	public int ModuleIndex;
+}
+
 public unsafe partial struct TypeManagerHandle : IEquatable<TypeManagerHandle>
 {
 	private TypeManager* handleValue;
@@ -63,9 +70,9 @@ internal unsafe struct TypeManager
 		return (void*)pClasslibFunctions[id];
 	}
 
-	internal TypeManager(nint osModule, nint pModuleHeader, nint* pClasslibFunctions, uint nClasslibFunctions) 
+	internal TypeManager(nint osModule, ReadyToRunHeader* pModuleHeader, nint* pClasslibFunctions, uint nClasslibFunctions) 
 	{
-		this.ReadyToRunHeader = (ReadyToRunHeader*)pModuleHeader;
+		this.ReadyToRunHeader = pModuleHeader;
 
 		if (
 			ReadyToRunHeader->Signature != ReadyToRunHeaderConstants.Signature

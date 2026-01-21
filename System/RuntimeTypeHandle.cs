@@ -34,5 +34,6 @@ public unsafe struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>
 	public override int GetHashCode() => IsNull ? 0 : this.ToEETypePtr().GetHashCode();
 
 	internal RuntimeTypeHandle(EETypePtr pEEType) : this(pEEType.RawValue) {}
+	internal RuntimeTypeHandle(MethodTable* pEEType) : this((nint)pEEType) {}
 	private RuntimeTypeHandle(nint value) => this.value = value;
 }

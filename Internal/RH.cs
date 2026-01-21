@@ -25,49 +25,52 @@ internal static unsafe class RH
 	private static void CopyMemory(void* dest, void* src, nuint size) => CopyMemory((nint)dest, (nint)src, size);
 	private static void CopyMemory(ref byte dest, ref byte src, nuint size) => CopyMemory(Unsafe.AsPointer<byte>(ref dest), Unsafe.AsPointer<byte>(ref src), size);
 
+	private static void SetMethodTable(nint obj, MethodTable* type) => CopyMemory(obj, (nint)(&type), (uint)sizeof(nint));
+
+
 
 	[RuntimeExport("RhpAssignRef")]
-	private static void RhpAssignRef(void** address, void* obj) => *address = obj;
+	public static void RhpAssignRef(void** address, void* obj) => *address = obj;
 
-	[RuntimeExport("RhpByRefAssignRef")]
-	private static void RhpByRefAssignRef(void** address, void* obj) => *address = obj;
+	[RuntimeImport("*", "RhpByRefAssignRef"), MethodImplAttribute(MethodImplOptions.InternalCall)]
+	public static extern void RhpByRefAssignRef(void** address, void** obj);
 
 	[RuntimeExport("RhpCheckedAssignRef")]
-	private static void RhpCheckedAssignRef(void** address, void* obj) => *address = obj;
+	public static void RhpCheckedAssignRef(void** address, void* obj) => *address = obj;
 
 
 	[RuntimeExport("RhpReversePInvoke")]
-	private static void RhpReversePInvoke(nint frame) {}
+	public static void RhpReversePInvoke(nint frame) {}
 
 	[RuntimeExport("RhpReversePInvokeReturn")]
-	private static void RhpReversePInvokeReturn(nint frame) {}
+	public static void RhpReversePInvokeReturn(nint frame) {}
 
 	[RuntimeExport("RhpPInvoke")]
-	private static void RhpPInvoke(nint frame) {}
+	public static void RhpPInvoke(nint frame) {}
 
 	[RuntimeExport("RhpPInvokeReturn")]
-	private static void RhpPInvokeReturn(nint frame) {}
+	public static void RhpPInvokeReturn(nint frame) {}
 
 
 	[RuntimeExport("RhpAcquireThunkPoolLock")]
-	private static void RhpAcquireThunkPoolLock() {}
+	public static void RhpAcquireThunkPoolLock() {}
 
 	[RuntimeExport("RhpReleaseThunkPoolLock")]
-	private static void RhpReleaseThunkPoolLock() {}
+	public static void RhpReleaseThunkPoolLock() {}
 
 
 	[RuntimeExport("RhBulkMoveWithWriteBarrier")]
-	private static void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size) => InternalCalls.memmove((byte*)Unsafe.AsPointer<byte>(ref dmem), (byte*)Unsafe.AsPointer<byte>(ref smem), size);
+	public static void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size) => InternalCalls.memmove((byte*)Unsafe.AsPointer<byte>(ref dmem), (byte*)Unsafe.AsPointer<byte>(ref smem), size);
 
 	[RuntimeExport("RhpGcSafeZeroMemory")]
-	private static ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size) 
+	public static ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size) 
 	{
 		ZeroMemory((nint)Unsafe.AsPointer<byte>(ref dmem), size);
 		return ref dmem;
 	}
 
 	[RuntimeExport("RhpCidResolve")]
-	private static unsafe nint RhpCidResolve(nint callerTransitionBlockParam, nint pCell) 
+	public static unsafe nint RhpCidResolve(nint callerTransitionBlockParam, nint pCell) 
 	{
 		nint locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
 		#pragma warning disable 8500
@@ -117,7 +120,7 @@ internal static unsafe class RH
 
 
 	[RuntimeExport("RhBox")]
-        private static unsafe object RhBox(MethodTable* pEEType, ref byte data)
+        public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
         {
             ref byte dataAdjustedForNullable = ref data;
 
@@ -156,7 +159,7 @@ internal static unsafe class RH
         }
 
 	[RuntimeExport("RhBoxAny")]
-        private static unsafe object RhBoxAny(ref byte data, MethodTable* pEEType)
+        public static unsafe object RhBoxAny(ref byte data, MethodTable* pEEType)
         {
             if (pEEType->IsValueType)
             {
@@ -168,7 +171,7 @@ internal static unsafe class RH
             }
         }
 
-	private static unsafe bool UnboxAnyTypeCompare(MethodTable* pEEType, MethodTable* ptrUnboxToEEType)
+	public static unsafe bool UnboxAnyTypeCompare(MethodTable* pEEType, MethodTable* ptrUnboxToEEType)
         {
             if (pEEType == ptrUnboxToEEType)
                 return true;
@@ -197,7 +200,7 @@ internal static unsafe class RH
         }
 
 	[RuntimeExport("RhUnboxAny")]
-        private static unsafe void RhUnboxAny(object? o, ref byte data, EETypePtr pUnboxToEEType)
+        public static unsafe void RhUnboxAny(object? o, ref byte data, EETypePtr pUnboxToEEType)
         {
             MethodTable* ptrUnboxToEEType = (MethodTable*)pUnboxToEEType.ToPointer();
             if (ptrUnboxToEEType->IsValueType)
@@ -237,7 +240,7 @@ internal static unsafe class RH
         }
 
 	[RuntimeExport("RhUnbox2")]
-        private static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
+        public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
         {
             if ((obj == null) || !UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
             {
@@ -248,7 +251,7 @@ internal static unsafe class RH
         }
 
         [RuntimeExport("RhUnboxNullable")]
-        private static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
+        public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
         {
             if (obj != null && obj.GetMethodTable() != pUnboxToEEType->NullableType)
             {
@@ -258,7 +261,7 @@ internal static unsafe class RH
         }
 
 	[RuntimeExport("RhUnbox")]
-        private static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
+        public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
         {
             // When unboxing to a Nullable the input object may be null.
             if (obj == null)
@@ -305,13 +308,13 @@ internal static unsafe class RH
         }
 
 	// [RuntimeExport("RhpGetModuleSection")]
-	// private static void* RhpGetModuleSection(TypeManagerHandle* pModule, int headerId, int* length) 
+	// public static void* RhpGetModuleSection(TypeManagerHandle* pModule, int headerId, int* length) 
 	// {
 	// 	return (void*)pModule->AsTypeManager()->GetModuleSection((ReadyToRunSectionType)headerId, length);
 	// }
 
 	[RuntimeExport("RhpGetClasslibFunctionFromEEType")]
-	private static void* RhpGetClasslibFunctionFromEEType(MethodTable* pEEType, ClassLibFunctionId functionId) 
+	public static void* RhpGetClasslibFunctionFromEEType(MethodTable* pEEType, ClassLibFunctionId functionId) 
 	{
 		return pEEType->TypeManager.AsTypeManager()->GetClasslibFunction(functionId);
 	}
@@ -323,20 +326,20 @@ internal static unsafe class RH
 	// }
 
 	// [RuntimeExport("RhpGcSafeZeroMemory")]
-	// private static nint RhpGcSafeZeroMemory(nint pointer, nuint size) 
+	// public static nint RhpGcSafeZeroMemory(nint pointer, nuint size) 
 	// {
 	// 	ZeroMemory(pointer, (uint)size);
 	// 	return pointer;
 	// }
 
 	[RuntimeExport("RhpGetDispatchCellInfo")]
-	private static void RhpGetDispatchCellInfo(InterfaceDispatchCell* pCell, out DispatchCellInfo pDispatchCellInfo) 
+	public static void RhpGetDispatchCellInfo(InterfaceDispatchCell* pCell, out DispatchCellInfo pDispatchCellInfo) 
 	{
 		pDispatchCellInfo = pCell->GetDispatchCellInfo();
 	}
 
 	// [RuntimeExport("RhpSearchDispatchCellCache")]
-	// private static byte* RhpSearchDispatchCellCache(InterfaceDispatchCell* pCell, MethodTable* pInstanceType) 
+	// public static byte* RhpSearchDispatchCellCache(InterfaceDispatchCell* pCell, MethodTable* pInstanceType) 
 	// {
 	// 	// This function must be implemented in native code so that we do not take a GC while walking the cache
 	//     InterfaceDispatchCache* pCache = (InterfaceDispatchCache*)pCell->GetCache();
@@ -352,10 +355,10 @@ internal static unsafe class RH
 	// }
 
 	// [RuntimeExport("RhpUpdateDispatchCellCache")]
-	// private static nint RhpUpdateDispatchCellCache(InterfaceDispatchCell* pCell, nint pTargetCode, MethodTable* pInstanceType, ref DispatchCellInfo newCellInfo) => pTargetCode;
+	// public static nint RhpUpdateDispatchCellCache(InterfaceDispatchCell* pCell, nint pTargetCode, MethodTable* pInstanceType, ref DispatchCellInfo newCellInfo) => pTargetCode;
 
 	[RuntimeExport("RhpNewFast")]
-	private static object RhpNewFast(MethodTable* pEEType) 
+	public static object RhpNewFast(MethodTable* pEEType) 
 	{
 		var size = pEEType->BaseSize;
 
@@ -372,7 +375,7 @@ internal static unsafe class RH
 	}
 
 	[RuntimeExport("RhpNewArray")]
-	private static object RhpNewArray(MethodTable* pEEType, int length) 
+	public static object RhpNewArray(MethodTable* pEEType, int length) 
 	{
 		var size = pEEType->BaseSize + (uint)length * pEEType->ComponentSize;
 
@@ -391,6 +394,4 @@ internal static unsafe class RH
 
 		return obj;
 	}
-
-	private static void SetMethodTable(nint obj, MethodTable* type) => CopyMemory(obj, (nint)(&type), (uint)sizeof(nint));
 }

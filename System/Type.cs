@@ -12,11 +12,7 @@ public class Type
 	public RuntimeTypeHandle TypeHandle => typeHandle;
 
 	public static Type GetTypeFromHandle(RuntimeTypeHandle rh) => new Type(rh);
-
-	internal static unsafe Type GetTypeFromMethodTable(MethodTable* pEEType) 
-	{
-		throw new NotImplementedException();
-	}
+	internal static unsafe Type GetTypeFromMethodTable(MethodTable* pEEType) => new Type(new RuntimeTypeHandle(new EETypePtr(pEEType)));
 
 	[Intrinsic] public static bool operator == (Type left, Type right) => RuntimeTypeHandle.ToIntPtr(left.typeHandle) == RuntimeTypeHandle.ToIntPtr(right.typeHandle);
 	[Intrinsic] public static bool operator != (Type left, Type right) => !(left == right);

@@ -5,5 +5,13 @@ namespace System;
 public static class Environment 
 {
 	public static void FailFast(string message) => FailFast(message, null);
-	public static void FailFast(string message, Exception? exception) => InternalCalls.RhpFallbackFailFast(message, exception);
+	public static void FailFast(string message, Exception? exception) 
+	{
+		Console.WriteLine(message);
+
+		if (exception != null && exception.Message != null)
+			Console.WriteLine(exception.Message);
+
+		InternalCalls.RhpFallbackFailFast(message, exception);
+	}
 }

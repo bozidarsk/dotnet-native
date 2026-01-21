@@ -12,7 +12,7 @@ public unsafe abstract class Object
 	public virtual string ToString() => GetType().ToString();
 	public virtual bool Equals(object? other) => this == other;
 	public virtual int GetHashCode() => this.ToString().GetHashCode();
-	public virtual Type GetType() => throw new NotImplementedException();
+	public virtual Type GetType() => Type.GetTypeFromMethodTable(m_pEEType);
 
 	public Object() {}
 	~Object() {}
@@ -22,6 +22,22 @@ public unsafe abstract class Object
 	internal MethodTable* GetMethodTable() => m_pEEType;
 	internal ref MethodTable* GetMethodTableRef() => ref m_pEEType;
 	internal EETypePtr GetEETypePtr() => new(m_pEEType);
+
+	internal nuint GetRawObjectDataSize()
+	{
+		var mt = GetMethodTable();
+
+		// See comment on RawArrayData for details
+		nuint rawSize = mt->BaseSize - (nuint)(2 * sizeof(nint));
+
+		if (mt->HasComponentSize)
+			rawSize += (uint)Unsafe.As<RawArrayData>(this).Length * (nuint)mt->ComponentSize;
+
+		return rawSize;
+	}
+
+
+	public static bool ReferenceEquals(object? a, object? b) => a == b;
 
 	[Intrinsic]
 	protected internal object MemberwiseClone() 

@@ -2,17 +2,18 @@
 	<PropertyGroup>
 		<DotnetNativeBinPath>$(MSBuildThisFileDirectory)bin</DotnetNativeBinPath>
 		<Configuration>Release</Configuration> <!-- Release|Debug -->
+		<Debugger>none</Debugger> <!-- none|gdb -->
 		<DotnetVersion>8.0.0</DotnetVersion> <!-- $([System.Environment]::Version) -->
 		<DotnetPath>~/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>
 		<Platform>x64</Platform>
 		<ASMFLAGS>-f elf64</ASMFLAGS>
-		<ILCFLAGS>--targetos linux --targetarch x64 --instruction-set x86-x64 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --systemmodule dotnet --nativelib --multifile --root dotnet --generateunmanagedentrypoints dotnet</ILCFLAGS>
+		<ILCFLAGS>--targetos linux --targetarch x64 --instruction-set x86-x64 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --noinlinetls --systemmodule dotnet --nativelib --multifile --root dotnet --generateunmanagedentrypoints dotnet</ILCFLAGS>
 		<LDFLAGS>-m elf_x86_64 -T linker.ld -static -no-pie -nostdlib -L $(DotnetNativeBinPath)</LDFLAGS>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<RunCommand>dotnet</RunCommand>
-		<RunArguments>msbuild -t:Run</RunArguments>
+		<RunArguments>msbuild -t:Run -p:Configuration=$(Configuration) -p:Debugger=$(Debugger)</RunArguments>
 		<TargetFramework>net8.0</TargetFramework>
 		<OutputType>library</OutputType>
 	</PropertyGroup>
