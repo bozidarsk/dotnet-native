@@ -6,10 +6,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime;
 
-// for testing:
-using Internal.Metadata.NativeFormat;
-using HType = Internal.Metadata.NativeFormat.HandleType;
-
 namespace Internal.Runtime.CompilerHelpers;
 
 internal static unsafe class StartupCodeHelpers 

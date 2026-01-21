@@ -8,6 +8,9 @@ namespace Internal;
 
 internal static unsafe class RH 
 {
+	public static void* ReadRelPtr32(void* address) => (byte*)address + *(int*)address;
+	public static void WriteRelPtr32(void* dest, void* value) => *(int*)dest = (int)((byte*)value - (byte*)dest);
+
 	[DllImport("*", EntryPoint = "kmalloc", CallingConvention = CallingConvention.Cdecl)]
 	private static extern nint Allocate(uint size);
 
