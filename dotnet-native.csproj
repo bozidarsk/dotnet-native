@@ -4,8 +4,7 @@ DEBUG
 BITS32 (default is 64bit arch)
 BIGENDIAN (default is le)
 CASTCACHE
-EASYINTEROP
-TARGET_AMD64 (or TARGET_X86 or TARGET_ARM64 or TARGET_ARM)
+TARGET_AMD64 or TARGET_X86 or TARGET_ARM64 or TARGET_ARM
 
 CS8603 (possible null reference return)
 CS8604 (possible null reference argument)
@@ -13,11 +12,6 @@ CS8618 (non-nullable property must contain a non-null value when exiting constru
 CS8625 (cannot convert null literal to non-null reference type)
 CS0164 (this label has not been referenced)
 CS0649 (field is never assigned and it will have its default value)
-
-TODO:
-does floor ceil accept negative numbers?
-DM for every f(x)
-Object.cs GetHashCode => (MethodTable*)->HashCode;
 
 -->
 
@@ -41,7 +35,7 @@ Object.cs GetHashCode => (MethodTable*)->HashCode;
 	<Target Name="Build" Inputs="@(Compile);@(Assemble)" Outputs="$(BIN)/dotnet.dll;$(BIN)/libdotnet.a">
 		<PropertyGroup>
 			<ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
-			<DefineConstants>EASYINTEROP;TARGET_AMD64</DefineConstants>
+			<DefineConstants>TARGET_AMD64</DefineConstants>
 			<DisabledWarnings>CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
 			<FileAlignment>512</FileAlignment>
 			<GenerateFullPaths>true</GenerateFullPaths>
