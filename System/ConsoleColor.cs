@@ -1,6 +1,6 @@
 namespace System;
 
-public enum ConsoleColor : byte
+public enum ConsoleColor 
 {
 	Black,
 	DarkBlue,

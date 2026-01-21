@@ -14,66 +14,25 @@ public static class Math
 	public static int Abs(int x) => (x < 0) ? -x : x;
 	public static long Abs(long x) => (x < 0) ? -x : x;
 
-	[DllImport("*", EntryPoint = "abs", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Abs(double x);
-
-	[DllImport("*", EntryPoint = "floor", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Floor(double x);
-
-	[DllImport("*", EntryPoint = "ceil", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Ceiling(double x);
-
-	[DllImport("*", EntryPoint = "sqrt", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Sqrt(double x);
-
-	[DllImport("*", EntryPoint = "cbrt", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Cbrt(double x);
-
-	[DllImport("*", EntryPoint = "log2", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Log2(double x);
-
-	[DllImport("*", EntryPoint = "log10", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Log10(double x);
-
-	[DllImport("*", EntryPoint = "sin", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Sin(double x);
-
-	[DllImport("*", EntryPoint = "cos", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Cos(double x);
-
-	[DllImport("*", EntryPoint = "tan", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Tan(double x);
-
-	[DllImport("*", EntryPoint = "asin", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Asin(double x);
-
-	[DllImport("*", EntryPoint = "acos", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Acos(double x);
-
-	[DllImport("*", EntryPoint = "atan", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Atan(double x);
-
-	[DllImport("*", EntryPoint = "atan2", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Atan2(double x);
-
-	[DllImport("*", EntryPoint = "sinh", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Sinh(double x);
-
-	[DllImport("*", EntryPoint = "cosh", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Cosh(double x);
-
-	[DllImport("*", EntryPoint = "tanh", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Tanh(double x);
-
-	[DllImport("*", EntryPoint = "asinh", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Asinh(double x);
-
-	[DllImport("*", EntryPoint = "acosh", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Acosh(double x);
-
-	[DllImport("*", EntryPoint = "atanh", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double Atanh(double x);
-
-	[DllImport("*", EntryPoint = "fma", CallingConvention = CallingConvention.Cdecl)]
-	public static extern double FusedMultiplyAdd(double x, double y, double z);
+	public static double Abs(double x) => RH.fabs(x);
+	public static double Floor(double x) => RH.floor(x);
+	public static double Ceiling(double x) => RH.ceil(x);
+	public static double Sqrt(double x) => RH.sqrt(x);
+	public static double Cbrt(double x) => RH.cbrt(x);
+	public static double Log2(double x) => RH.log2(x);
+	public static double Log10(double x) => RH.log10(x);
+	public static double Sin(double x) => RH.sin(x);
+	public static double Cos(double x) => RH.cos(x);
+	public static double Tan(double x) => RH.tan(x);
+	public static double Asin(double x) => RH.asin(x);
+	public static double Acos(double x) => RH.acos(x);
+	public static double Atan(double x) => RH.atan(x);
+	public static double Atan2(double x) => RH.atan2(x);
+	public static double Sinh(double x) => RH.sinh(x);
+	public static double Cosh(double x) => RH.cosh(x);
+	public static double Tanh(double x) => RH.tanh(x);
+	public static double Asinh(double x) => RH.asinh(x);
+	public static double Acosh(double x) => RH.acosh(x);
+	public static double Atanh(double x) => RH.atanh(x);
+	public static double FusedMultiplyAdd(double x, double y, double z) => RH.fma(x, y, z);
 }

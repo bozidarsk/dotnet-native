@@ -367,7 +367,7 @@ public sealed class String : IEnumerable, IEnumerable<char>
 		var et = EETypePtr.EETypePtrOf<string>();
 
 		var start = pointer + index;
-		var data = InternalCalls.RhpNewArray(et.ToPointer(), length);
+		var data = RH.RhpNewArray(et.ToPointer(), length);
 		var s = Unsafe.As<object, string>(ref data);
 
 		fixed (char* c = &s.firstChar) 

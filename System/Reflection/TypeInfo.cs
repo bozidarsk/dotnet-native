@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using Internal;
 using Internal.Runtime;
 using Internal.NativeFormat;
 using Internal.Metadata.NativeFormat;

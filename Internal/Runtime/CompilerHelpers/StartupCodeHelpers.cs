@@ -13,9 +13,6 @@ internal static unsafe class StartupCodeHelpers
 	private static TypeManager[] modules;
 	private static object[] gcStaticBaseSpines;
 
-	private static void* ReadRelPtr32(void* address) => (byte*)address + *(int*)address;
-	private static void WriteRelPtr32(void* dest, void* value) => *(int*)dest = (int)((byte*)value - (byte*)dest);
-
 	[RuntimeExport("InitializeModules")]
 	private static void InitializeModules(nint osModule, ReadyToRunHeader** pModuleHeaders, int count, nint* pClasslibFunctions, int nClasslibFunctions) 
 	{
@@ -55,7 +52,7 @@ internal static unsafe class StartupCodeHelpers
 			pCurrent < (pInitializers + length);
 			pCurrent += MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))
 		{
-			var initializer = MethodTable.SupportsRelativePointers ? (delegate*<void>)ReadRelPtr32(pCurrent) : *(delegate*<void>*)pCurrent;
+			var initializer = MethodTable.SupportsRelativePointers ? (delegate*<void>)RH.ReadRelPtr32(pCurrent) : *(delegate*<void>*)pCurrent;
 			initializer();
 		}
 	}
@@ -124,8 +121,8 @@ internal static unsafe class StartupCodeHelpers
 			// The first time we initialize the static region its pointer is replaced with an object reference
 			// whose lowest bit is no longer set.
 
-			nint* pBlock = MethodTable.SupportsRelativePointers ? (nint*)ReadRelPtr32(block) : *(nint**)block;
-			nint blockAddress = MethodTable.SupportsRelativePointers ? (nint)ReadRelPtr32(pBlock) : *pBlock;
+			nint* pBlock = MethodTable.SupportsRelativePointers ? (nint*)RH.ReadRelPtr32(block) : *(nint**)block;
+			nint blockAddress = MethodTable.SupportsRelativePointers ? (nint)RH.ReadRelPtr32(pBlock) : *pBlock;
 
 			if ((blockAddress & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized) 
             {
@@ -143,7 +140,7 @@ internal static unsafe class StartupCodeHelpers
 					// which are pointer relocs to GC objects in frozen segment.
 					// It actually has all GC fields including non-preinitialized fields and we simply copy over the
 					// entire blob to this object, overwriting everything.
-					void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
+					void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? RH.ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
 					RH.RhBulkMoveWithWriteBarrier(ref obj!.GetRawData(), ref *(byte*)pPreInitDataAddr, obj!.GetRawObjectDataSize());
 				}
 
@@ -163,7 +160,7 @@ internal static unsafe class StartupCodeHelpers
 	private static void RehydrateData(nint dehydratedData, int length) 
 	{
 		// Destination for the hydrated data is in the first 32-bit relative pointer
-		byte* pDest = (byte*)ReadRelPtr32((void*)dehydratedData);
+		byte* pDest = (byte*)RH.ReadRelPtr32((void*)dehydratedData);
 
 		// The dehydrated data follows
 		byte* pCurrent = (byte*)dehydratedData + sizeof(int);
@@ -205,12 +202,7 @@ internal static unsafe class StartupCodeHelpers
 					{
 						// At the time of writing this, 90% of DehydratedDataCommand.Copy cases
 						// would fall into the above specialized cases. 10% fall back to memmove.
-						memmove(pDest, pCurrent, (nuint)payload);
-
-						// Not a DllImport - we don't need a GC transition since this is early startup
-						[MethodImplAttribute(MethodImplOptions.InternalCall)]
-						[RuntimeImport("*", "memmove")]
-						static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+						RH.memmove(pDest, pCurrent, (nuint)payload);
 					}
 
 					pDest += payload;
@@ -220,17 +212,17 @@ internal static unsafe class StartupCodeHelpers
 					pDest += payload;
 					break;
 				case DehydratedDataCommand.PtrReloc:
-					*(void**)pDest = ReadRelPtr32(pFixups + payload);
+					*(void**)pDest = RH.ReadRelPtr32(pFixups + payload);
 					pDest += sizeof(void*);
 					break;
 				case DehydratedDataCommand.RelPtr32Reloc:
-					WriteRelPtr32(pDest, ReadRelPtr32(pFixups + payload));
+					RH.WriteRelPtr32(pDest, RH.ReadRelPtr32(pFixups + payload));
 					pDest += sizeof(int);
 					break;
 				case DehydratedDataCommand.InlinePtrReloc:
 					while (payload-- > 0)
 					{
-						*(void**)pDest = ReadRelPtr32(pCurrent);
+						*(void**)pDest = RH.ReadRelPtr32(pCurrent);
 						pDest += sizeof(void*);
 						pCurrent += sizeof(int);
 					}
@@ -238,7 +230,7 @@ internal static unsafe class StartupCodeHelpers
 				case DehydratedDataCommand.InlineRelPtr32Reloc:
 					while (payload-- > 0)
 					{
-						WriteRelPtr32(pDest, ReadRelPtr32(pCurrent));
+						RH.WriteRelPtr32(pDest, RH.ReadRelPtr32(pCurrent));
 						pDest += sizeof(int);
 						pCurrent += sizeof(int);
 					}

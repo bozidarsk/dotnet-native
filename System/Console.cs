@@ -6,21 +6,60 @@ namespace System;
 
 public static class Console 
 {
-	public static ConsoleColor ForegroundColor { set; get; } = ConsoleColor.White;
-	public static ConsoleColor BackgroundColor { set; get; } = ConsoleColor.Black;
+	public static ConsoleColor ForegroundColor { set; get; } = (ConsoleColor)(-1);
+	public static ConsoleColor BackgroundColor { set; get; } = (ConsoleColor)(-1);
 
-	[DllImport("*", EntryPoint = "consolewrite")]
-	private static unsafe extern void WriteChars(char* chars, byte color);
+	private static unsafe void write(string str) 
+	{
+		sbyte* chars = stackalloc sbyte[str.Length];
 
-	[DllImport("*", EntryPoint = "consoleclear")]
-	public static unsafe extern void Clear();
+		for (int i = 0; i < str.Length; i++)
+			chars[i] = (sbyte)str[i];
+
+		RH.write(1, chars, (nuint)str.Length);
+	}
+
+	public static void Clear() => write("\x1b[H\x1b[2J\x1b[3J");
+
+	public static void ResetColor() 
+	{
+		ForegroundColor = (ConsoleColor)(-1);
+		BackgroundColor = (ConsoleColor)(-1);
+		write("\x1b[39;49m");
+	}
 
 	private static unsafe void WriteString(string? str) 
 	{
-		if (str == null)
+		if (str == null || str.Length == 0)
 			return;
 
-		WriteChars((char*)Unsafe.AsPointer<char>(ref str.GetPinnableReference()), (byte)(((byte)BackgroundColor << 4) | (byte)ForegroundColor));
+		if (ForegroundColor != (ConsoleColor)(-1) && BackgroundColor != (ConsoleColor)(-1)) 
+		{
+			// 256 colors by id
+			int* colors = stackalloc int[] 
+			{
+				0, // Black = 0
+				4, // DarkBlue = 1
+				2, // DarkGreen = 2
+				6, // DarkCyan = 3
+				1, // DarkRed = 4
+				5, // DarkMagenta = 5
+				3, // DarkYellow = 6
+				7, // Gray = 7
+				8, // DarkGray = 8
+				12, // Blue = 9
+				10, // Green = 10
+				14, // Cyan = 11
+				9, // Red = 12
+				13, // Magenta = 13
+				11, // Yellow = 14
+				15, // White = 15
+			};
+
+			write($"\x1b[38;5;{colors[(int)ForegroundColor & 0xf]}m\x1b[48;5;{colors[(int)BackgroundColor & 0xf]}m");
+		}
+
+		write(str);
 	}
 
 	public static void Write(string format, params object?[]? args) => WriteString(string.Format(format, args));

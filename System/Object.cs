@@ -44,8 +44,8 @@ public unsafe abstract class Object
 	{
 		object clone = 
 			GetEETypePtr().IsArray
-			? InternalCalls.RhpNewArray(GetMethodTable(), Unsafe.As<Array>(this).Length)
-			: InternalCalls.RhpNewFast(GetMethodTable())
+			? RH.RhpNewArray(GetMethodTable(), Unsafe.As<Array>(this).Length)
+			: RH.RhpNewFast(GetMethodTable())
 		;
 
 		// copy contents of "this" to the clone

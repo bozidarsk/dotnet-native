@@ -4,43 +4,32 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime;
 
-namespace Internal;
-
-internal static unsafe class RH 
+internal static unsafe partial class RH 
 {
 	public static void* ReadRelPtr32(void* address) => (byte*)address + *(int*)address;
 	public static void WriteRelPtr32(void* dest, void* value) => *(int*)dest = (int)((byte*)value - (byte*)dest);
 
-	[DllImport("*", EntryPoint = "kmalloc", CallingConvention = CallingConvention.Cdecl)]
-	private static extern nint Allocate(uint size);
-
-	[DllImport("*", EntryPoint = "kfree", CallingConvention = CallingConvention.Cdecl)]
-	private static extern void Free(nint pointer);
-
-	[DllImport("*", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl)]
-	private static extern void SetMemory(nint pointer, byte value, nuint size);
-
-	[DllImport("*", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl)]
-	private static extern void CopyMemory(nint dest, nint src, nuint size);
-
-	private static void ZeroMemory(nint pointer, nuint size) => SetMemory(pointer, 0, size);
-
-	private static void CopyMemory(void* dest, void* src, nuint size) => CopyMemory((nint)dest, (nint)src, size);
-	private static void CopyMemory(ref byte dest, ref byte src, nuint size) => CopyMemory(Unsafe.AsPointer<byte>(ref dest), Unsafe.AsPointer<byte>(ref src), size);
-
-	private static void SetMethodTable(nint obj, MethodTable* type) => CopyMemory(obj, (nint)(&type), (uint)sizeof(nint));
+	private static void ZeroMemory(nint pointer, nuint size) => memset(pointer, 0, size);
+	private static void SetMethodTable(nint obj, MethodTable* type) => memcpy(obj, (nint)(&type), (uint)sizeof(nint));
 
 
+
+	[RuntimeExport("RhpFallbackFailFast")]
+	public static void RhpFallbackFailFast(string message, Exception? e) => abort();
+
+	[RuntimeImport("*", "RhpAssignRef")]
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern void RhpAssignRef(ref object address, object obj);
 
 	[RuntimeExport("RhpAssignRef")]
 	public static void RhpAssignRef(void** address, void* obj) => *address = obj;
 
-	[RuntimeImport("*", "RhpByRefAssignRef"), MethodImplAttribute(MethodImplOptions.InternalCall)]
-	public static extern void RhpByRefAssignRef(void** address, void** obj);
-
 	[RuntimeExport("RhpCheckedAssignRef")]
 	public static void RhpCheckedAssignRef(void** address, void* obj) => *address = obj;
 
+
+	[RuntimeExport("RhpThrowEx")]
+	public static void RhpThrowEx(Exception e) => Environment.FailFast("Unhandled exception.", e);
 
 	[RuntimeExport("RhpReversePInvoke")]
 	public static void RhpReversePInvoke(nint frame) {}
@@ -63,7 +52,7 @@ internal static unsafe class RH
 
 
 	[RuntimeExport("RhBulkMoveWithWriteBarrier")]
-	public static void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size) => InternalCalls.memmove((byte*)Unsafe.AsPointer<byte>(ref dmem), (byte*)Unsafe.AsPointer<byte>(ref smem), size);
+	public static void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size) => memmove(ref dmem, ref smem, size);
 
 	[RuntimeExport("RhpGcSafeZeroMemory")]
 	public static ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size) 
@@ -72,243 +61,245 @@ internal static unsafe class RH
 		return ref dmem;
 	}
 
-	[RuntimeExport("RhpCidResolve")]
-	public static unsafe nint RhpCidResolve(nint callerTransitionBlockParam, nint pCell) 
-	{
-		nint locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-		#pragma warning disable 8500
-		object pObject = *(object*)locationOfThisPointer;
-		#pragma warning restore 8500
 
 
-		DispatchCellInfo cellInfo;
-		RhpGetDispatchCellInfo((InterfaceDispatchCell*)pCell, out cellInfo);
+	// [RuntimeExport("RhpCidResolve")]
+	// public static unsafe nint RhpCidResolve(nint callerTransitionBlockParam, nint pCell) 
+	// {
+	// 	nint locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
+	// 	#pragma warning disable 8500
+	// 	object pObject = *(object*)locationOfThisPointer;
+	// 	#pragma warning restore 8500
 
-		MethodTable* pInstanceType = pObject.GetMethodTable();
-		nint pTargetCode;
 
-		switch (cellInfo.CellType) 
-		{
-			case DispatchCellType.InterfaceAndSlot:
-				MethodTable* pResolvingInstanceType = pInstanceType;
+	// 	DispatchCellInfo cellInfo;
+	// 	RhpGetDispatchCellInfo((InterfaceDispatchCell*)pCell, out cellInfo);
 
-				pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(
-					pResolvingInstanceType,
-					cellInfo.InterfaceType.ToPointer(),
-					cellInfo.InterfaceSlot,
-					ppGenericContext: null
-				);
+	// 	MethodTable* pInstanceType = pObject.GetMethodTable();
+	// 	nint pTargetCode;
 
-				// if (pTargetCode == 0 && pInstanceType->IsIDynamicInterfaceCastable)
-				// {
-				// 	var pfnGetInterfaceImplementation = 
-				// 		(delegate*<object, MethodTable*, ushort, nint>)pInstanceType->GetClasslibFunction(
-				// 			ClassLibFunctionId.IDynamicCastableGetInterfaceImplementation
-				// 		);
+	// 	switch (cellInfo.CellType) 
+	// 	{
+	// 		case DispatchCellType.InterfaceAndSlot:
+	// 			MethodTable* pResolvingInstanceType = pInstanceType;
 
-				// 	pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType.ToPointer(), cellInfo.InterfaceSlot);
-				// }
+	// 			pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(
+	// 				pResolvingInstanceType,
+	// 				cellInfo.InterfaceType.ToPointer(),
+	// 				cellInfo.InterfaceSlot,
+	// 				ppGenericContext: null
+	// 			);
 
-				break;
-			case DispatchCellType.VTableOffset:
-				pTargetCode = *(nint*)(((byte*)pInstanceType) + cellInfo.VTableOffset);
-				break;
-			default:
-				throw new NotSupportedException("!SUPPORTS_NATIVE_METADATA_TYPE_LOADING_AND_SUPPORTS_TOKEN_BASED_DISPATCH_CELLS");
-		}
+	// 			// if (pTargetCode == 0 && pInstanceType->IsIDynamicInterfaceCastable)
+	// 			// {
+	// 			// 	var pfnGetInterfaceImplementation = 
+	// 			// 		(delegate*<object, MethodTable*, ushort, nint>)pInstanceType->GetClasslibFunction(
+	// 			// 			ClassLibFunctionId.IDynamicCastableGetInterfaceImplementation
+	// 			// 		);
 
-		return (pTargetCode != 0) ? pTargetCode : throw new NullReferenceException();
-	}
+	// 			// 	pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType.ToPointer(), cellInfo.InterfaceSlot);
+	// 			// }
+
+	// 			break;
+	// 		case DispatchCellType.VTableOffset:
+	// 			pTargetCode = *(nint*)(((byte*)pInstanceType) + cellInfo.VTableOffset);
+	// 			break;
+	// 		default:
+	// 			throw new NotSupportedException("!SUPPORTS_NATIVE_METADATA_TYPE_LOADING_AND_SUPPORTS_TOKEN_BASED_DISPATCH_CELLS");
+	// 	}
+
+	// 	return (pTargetCode != 0) ? pTargetCode : throw new NullReferenceException();
+	// }
 
 
 
 	[RuntimeExport("RhBox")]
-        public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
+    public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
+    {
+        ref byte dataAdjustedForNullable = ref data;
+
+        // Can box non-ByRefLike value types only (which also implies no finalizers).
+
+        // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
+        // nullable's value is empty).
+        if (pEEType->IsNullable)
         {
-            ref byte dataAdjustedForNullable = ref data;
+            // The boolean which indicates whether the value is null comes first in the Nullable struct.
+            if (data == 0)
+                return null;
 
-            // Can box non-ByRefLike value types only (which also implies no finalizers).
-
-            // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
-            // nullable's value is empty).
-            if (pEEType->IsNullable)
-            {
-                // The boolean which indicates whether the value is null comes first in the Nullable struct.
-                if (data == 0)
-                    return null;
-
-                // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
-                // to the value embedded within the nullable.
-                dataAdjustedForNullable = ref Unsafe.Add(ref data, pEEType->NullableValueOffset);
-                pEEType = pEEType->NullableType;
-            }
-
-            object result = InternalCalls.RhpNewFast(pEEType);
-
-            // Copy the unboxed value type data into the new object.
-            // Perform any write barriers necessary for embedded reference fields.
-            if (pEEType->ContainsGCPointers)
-            {
-                InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
-            }
-            else
-            {
-                fixed (byte* pFields = &result.GetRawData())
-                fixed (byte* pData = &dataAdjustedForNullable)
-                    InternalCalls.memmove(pFields, pData, pEEType->ValueTypeSize);
-            }
-
-            return result;
+            // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
+            // to the value embedded within the nullable.
+            dataAdjustedForNullable = ref Unsafe.Add(ref data, pEEType->NullableValueOffset);
+            pEEType = pEEType->NullableType;
         }
+
+        object result = RhpNewFast(pEEType);
+
+        // Copy the unboxed value type data into the new object.
+        // Perform any write barriers necessary for embedded reference fields.
+        if (pEEType->ContainsGCPointers)
+        {
+            RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
+        }
+        else
+        {
+            fixed (byte* pFields = &result.GetRawData())
+            fixed (byte* pData = &dataAdjustedForNullable)
+                memmove(pFields, pData, pEEType->ValueTypeSize);
+        }
+
+        return result;
+    }
 
 	[RuntimeExport("RhBoxAny")]
-        public static unsafe object RhBoxAny(ref byte data, MethodTable* pEEType)
+    public static unsafe object RhBoxAny(ref byte data, MethodTable* pEEType)
+    {
+        if (pEEType->IsValueType)
         {
-            if (pEEType->IsValueType)
+            return RhBox(pEEType, ref data);
+        }
+        else
+        {
+            return Unsafe.As<byte, object>(ref data);
+        }
+    }
+
+	private static unsafe bool UnboxAnyTypeCompare(MethodTable* pEEType, MethodTable* ptrUnboxToEEType)
+    {
+        if (pEEType == ptrUnboxToEEType)
+            return true;
+
+        if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
+        {
+            // Enum's and primitive types should pass the UnboxAny exception cases
+            // if they have an exactly matching cor element type.
+            switch (ptrUnboxToEEType->ElementType)
             {
-                return RhBox(pEEType, ref data);
-            }
-            else
-            {
-                return Unsafe.As<byte, object>(ref data);
+                case EETypeElementType.Byte:
+                case EETypeElementType.SByte:
+                case EETypeElementType.Int16:
+                case EETypeElementType.UInt16:
+                case EETypeElementType.Int32:
+                case EETypeElementType.UInt32:
+                case EETypeElementType.Int64:
+                case EETypeElementType.UInt64:
+                case EETypeElementType.IntPtr:
+                case EETypeElementType.UIntPtr:
+                    return true;
             }
         }
 
-	public static unsafe bool UnboxAnyTypeCompare(MethodTable* pEEType, MethodTable* ptrUnboxToEEType)
-        {
-            if (pEEType == ptrUnboxToEEType)
-                return true;
-
-            if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
-            {
-                // Enum's and primitive types should pass the UnboxAny exception cases
-                // if they have an exactly matching cor element type.
-                switch (ptrUnboxToEEType->ElementType)
-                {
-                    case EETypeElementType.Byte:
-                    case EETypeElementType.SByte:
-                    case EETypeElementType.Int16:
-                    case EETypeElementType.UInt16:
-                    case EETypeElementType.Int32:
-                    case EETypeElementType.UInt32:
-                    case EETypeElementType.Int64:
-                    case EETypeElementType.UInt64:
-                    case EETypeElementType.IntPtr:
-                    case EETypeElementType.UIntPtr:
-                        return true;
-                }
-            }
-
-            return false;
-        }
+        return false;
+    }
 
 	[RuntimeExport("RhUnboxAny")]
-        public static unsafe void RhUnboxAny(object? o, ref byte data, EETypePtr pUnboxToEEType)
+    public static unsafe void RhUnboxAny(object? o, ref byte data, EETypePtr pUnboxToEEType)
+    {
+        MethodTable* ptrUnboxToEEType = (MethodTable*)pUnboxToEEType.ToPointer();
+        if (ptrUnboxToEEType->IsValueType)
         {
-            MethodTable* ptrUnboxToEEType = (MethodTable*)pUnboxToEEType.ToPointer();
-            if (ptrUnboxToEEType->IsValueType)
+            bool isValid = false;
+
+            if (ptrUnboxToEEType->IsNullable)
             {
-                bool isValid = false;
-
-                if (ptrUnboxToEEType->IsNullable)
-                {
-                    isValid = (o == null) || o.GetMethodTable() == ptrUnboxToEEType->NullableType;
-                }
-                else
-                {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), ptrUnboxToEEType);
-                }
-
-                if (!isValid)
-                {
-                    // Throw the invalid cast exception defined by the classlib, using the input unbox MethodTable*
-                    // to find the correct classlib.
-
-                    ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-
-                    throw ptrUnboxToEEType->GetClasslibException(exID);
-                }
-
-                RhUnbox(o, ref data, ptrUnboxToEEType);
+                isValid = (o == null) || o.GetMethodTable() == ptrUnboxToEEType->NullableType;
             }
             else
             {
-                if (o != null && (TypeCast.IsInstanceOfAny(ptrUnboxToEEType, o) == null))
-                {
-                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-                }
-
-                Unsafe.As<byte, object?>(ref data) = o;
+                isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), ptrUnboxToEEType);
             }
+
+            if (!isValid)
+            {
+                // Throw the invalid cast exception defined by the classlib, using the input unbox MethodTable*
+                // to find the correct classlib.
+
+                ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
+
+                throw ptrUnboxToEEType->GetClasslibException(exID);
+            }
+
+            RhUnbox(o, ref data, ptrUnboxToEEType);
         }
+        else
+        {
+            if (o != null && (TypeCast.IsInstanceOfAny(ptrUnboxToEEType, o) == null))
+            {
+                throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+            }
+
+            Unsafe.As<byte, object?>(ref data) = o;
+        }
+    }
 
 	[RuntimeExport("RhUnbox2")]
-        public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
+    public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
+    {
+        if ((obj == null) || !UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
         {
-            if ((obj == null) || !UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
-            {
-                ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-                throw pUnboxToEEType->GetClasslibException(exID);
-            }
-            return ref obj.GetRawData();
+            ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
+            throw pUnboxToEEType->GetClasslibException(exID);
         }
+        return ref obj.GetRawData();
+    }
 
-        [RuntimeExport("RhUnboxNullable")]
-        public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
+    [RuntimeExport("RhUnboxNullable")]
+    public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
+    {
+        if (obj != null && obj.GetMethodTable() != pUnboxToEEType->NullableType)
         {
-            if (obj != null && obj.GetMethodTable() != pUnboxToEEType->NullableType)
-            {
-                throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-            }
-            RhUnbox(obj, ref data, pUnboxToEEType);
+            throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
         }
+        RhUnbox(obj, ref data, pUnboxToEEType);
+    }
 
 	[RuntimeExport("RhUnbox")]
-        public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
+    public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
+    {
+        // When unboxing to a Nullable the input object may be null.
+        if (obj == null)
         {
-            // When unboxing to a Nullable the input object may be null.
-            if (obj == null)
-            {
 
-                // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
-                InternalCalls.RhpGcSafeZeroMemory(
-                    ref data,
-                    pUnboxToEEType->ValueTypeSize);
+            // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
+            RhpGcSafeZeroMemory(
+                ref data,
+                pUnboxToEEType->ValueTypeSize);
 
-                return;
-            }
-
-            MethodTable* pEEType = obj.GetMethodTable();
-
-            // Can unbox value types only.
-
-            // A special case is that we can unbox a value type T into a Nullable<T>. It's the only case where
-            // pUnboxToEEType is useful.
-            if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
-            {
-
-                // Set the first field of the Nullable to true to indicate the value is present.
-                Unsafe.As<byte, bool>(ref data) = true;
-
-                // Adjust the data pointer so that it points at the value field in the Nullable.
-                data = ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset);
-            }
-
-            ref byte fields = ref obj.GetRawData();
-
-            if (pEEType->ContainsGCPointers)
-            {
-                // Copy the boxed fields into the new location in a GC safe manner
-                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);
-            }
-            else
-            {
-                // Copy the boxed fields into the new location.
-                fixed (byte *pData = &data)
-                    fixed (byte* pFields = &fields)
-                        InternalCalls.memmove(pData, pFields, pEEType->ValueTypeSize);
-            }
+            return;
         }
+
+        MethodTable* pEEType = obj.GetMethodTable();
+
+        // Can unbox value types only.
+
+        // A special case is that we can unbox a value type T into a Nullable<T>. It's the only case where
+        // pUnboxToEEType is useful.
+        if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
+        {
+
+            // Set the first field of the Nullable to true to indicate the value is present.
+            Unsafe.As<byte, bool>(ref data) = true;
+
+            // Adjust the data pointer so that it points at the value field in the Nullable.
+            data = ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset);
+        }
+
+        ref byte fields = ref obj.GetRawData();
+
+        if (pEEType->ContainsGCPointers)
+        {
+            // Copy the boxed fields into the new location in a GC safe manner
+            RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);
+        }
+        else
+        {
+            // Copy the boxed fields into the new location.
+            fixed (byte *pData = &data)
+                fixed (byte* pFields = &fields)
+                    memmove(pData, pFields, pEEType->ValueTypeSize);
+        }
+    }
 
 	// [RuntimeExport("RhpGetModuleSection")]
 	// public static void* RhpGetModuleSection(TypeManagerHandle* pModule, int headerId, int* length) 
@@ -335,11 +326,11 @@ internal static unsafe class RH
 	// 	return pointer;
 	// }
 
-	[RuntimeExport("RhpGetDispatchCellInfo")]
-	public static void RhpGetDispatchCellInfo(InterfaceDispatchCell* pCell, out DispatchCellInfo pDispatchCellInfo) 
-	{
-		pDispatchCellInfo = pCell->GetDispatchCellInfo();
-	}
+	// [RuntimeExport("RhpGetDispatchCellInfo")]
+	// public static void RhpGetDispatchCellInfo(InterfaceDispatchCell* pCell, out DispatchCellInfo pDispatchCellInfo) 
+	// {
+	// 	pDispatchCellInfo = pCell->GetDispatchCellInfo();
+	// }
 
 	// [RuntimeExport("RhpSearchDispatchCellCache")]
 	// public static byte* RhpSearchDispatchCellCache(InterfaceDispatchCell* pCell, MethodTable* pInstanceType) 
@@ -369,7 +360,7 @@ internal static unsafe class RH
 		if (size % 8 > 0)
 			size = ((size / 8) + 1) * 8;
 
-		var data = Allocate(size);
+		var data = malloc(size);
 		var obj = Unsafe.As<nint, object>(ref data);
 		ZeroMemory(data, size);
 		SetMethodTable(data, pEEType);
@@ -386,14 +377,14 @@ internal static unsafe class RH
 		if (size % 8 > 0)
 			size = ((size / 8) + 1) * 8;
 
-		var data = Allocate(size);
+		var data = malloc(size);
 		var obj = Unsafe.As<nint, object>(ref data);
 		ZeroMemory(data, size);
 		SetMethodTable(data, pEEType);
 
 		var b = (byte*)data;
 		b += sizeof(nint);
-		CopyMemory((nint)b, (nint)(&length), sizeof(int));
+		memcpy((nint)b, (nint)(&length), sizeof(int));
 
 		return obj;
 	}

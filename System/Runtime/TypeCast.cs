@@ -717,7 +717,7 @@ namespace System.Runtime
                 goto notExactMatch;
 
         doWrite:
-            InternalCalls.RhpAssignRef(ref element, obj);
+            RH.RhpAssignRef(ref element, obj);
             return;
 
         assigningNull:
@@ -741,7 +741,7 @@ namespace System.Runtime
             CastResult result = s_castCache.TryGet((nuint)obj.GetMethodTable() + (int)AssignmentVariation.BoxedSource, (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
+                RH.RhpAssignRef(ref element, obj);
                 return;
             }
             #endif
@@ -754,7 +754,7 @@ namespace System.Runtime
             object? castedObj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
             if (castedObj != null)
             {
-                InternalCalls.RhpAssignRef(ref element, obj);
+                RH.RhpAssignRef(ref element, obj);
                 return;
             }
 

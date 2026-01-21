@@ -5,9 +5,6 @@ public class Exception
 	public string? Message { get; }
 	public Exception? InnerException { get; }
 
-	[System.Runtime.RuntimeExport("RhpThrowEx")]
-	private static void RhpThrowEx(Exception e) => Environment.FailFast("Unhandled exception.", e);
-
 	public Exception() : this("An exception was thrown.") {}
 	public Exception(string? message) => this.Message = message;
 	public Exception(string? message, Exception? innerException) : this(message) => this.InnerException = innerException;

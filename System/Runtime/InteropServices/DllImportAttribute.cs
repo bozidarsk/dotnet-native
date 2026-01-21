@@ -14,9 +14,5 @@ public sealed class DllImportAttribute : Attribute
 	public bool PreserveSig;
 	public bool ThrowOnUnmappableChar;
 
-	#if EASYINTEROP
-	public DllImportAttribute(string name = "*") => this.Value = name;
-	#else
 	public DllImportAttribute(string name) => this.Value = name;
-	#endif
 }

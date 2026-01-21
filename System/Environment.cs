@@ -12,6 +12,6 @@ public static class Environment
 		if (exception != null && exception.Message != null)
 			Console.WriteLine(exception.Message);
 
-		InternalCalls.RhpFallbackFailFast(message, exception);
+		RH.RhpFallbackFailFast(message, exception);
 	}
 }

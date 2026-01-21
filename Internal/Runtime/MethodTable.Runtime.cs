@@ -7,7 +7,7 @@ namespace Internal.Runtime;
 internal unsafe partial struct MethodTable 
 {
 	internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => (mt1 == mt2) ? true : mt1->IsEquivalentTo(mt2);
-	internal nint GetClasslibFunction(ClassLibFunctionId id) => (nint)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
+	internal nint GetClasslibFunction(ClassLibFunctionId id) => (nint)RH.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
 	internal Exception GetClasslibException(ExceptionIDs id) 
 	{
 		switch (id) 
