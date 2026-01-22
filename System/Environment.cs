@@ -9,8 +9,14 @@ public static class Environment
 	{
 		Console.WriteLine(message);
 
-		if (exception != null && exception.Message != null)
-			Console.WriteLine(exception.Message);
+		if (exception != null) 
+		{
+			Console.Write(exception);
+			Console.Write(": ");
+
+			if (exception.Message != null)
+				Console.WriteLine(exception.Message);
+		}
 
 		RH.RhpFallbackFailFast(message, exception);
 	}
