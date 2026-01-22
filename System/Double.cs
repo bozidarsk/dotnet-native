@@ -16,5 +16,8 @@ public readonly struct Double
 	public static unsafe bool IsNaN(double x) => x != x;
 	#pragma warning restore
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsInfinity(double x) => x == PositiveInfinity || x == NegativeInfinity;
+
 	public override string ToString() => "System.Double";
 }
