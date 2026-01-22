@@ -14,15 +14,18 @@ internal static unsafe class StartupCodeHelpers
 	private static object[] gcStaticBaseSpines;
 
 	[RuntimeExport("InitializeModules")]
-	private static void InitializeModules(nint osModule, ReadyToRunHeader** pModuleHeaders, int count, nint* pClasslibFunctions, int nClasslibFunctions) 
+	private static void InitializeModules(ReadyToRunHeader** pModules) 
 	{
 		// dont use any static fields untill after InitailizeGlobalTables (GCStatics)
+
+		int count = 0;
+		while (pModules[count] != default) count++;
 
 		var modules = new TypeManager[count];
 		var gcStaticBaseSpines = new object[count];
 
 		for (int i = 0; i < count; i++)
-			modules[i] = new TypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, (uint)nClasslibFunctions);
+			modules[i] = new TypeManager(default, pModules[i], default, 0);
 
 		for (int i = 0; i < count; i++)
 			InitailizeGlobalTables(modules, i, gcStaticBaseSpines);
