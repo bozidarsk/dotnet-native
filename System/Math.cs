@@ -211,11 +211,114 @@ public static class Math
 
 	public static double Tan(double x) => Sin(x) / Cos(x);
 
-	public static double Asin(double x) => throw new NotImplementedException();
+	public static unsafe double Asin(double x) 
+	{
+		if (double.IsNaN(x) || x < -1 || x > 1)
+			return double.NaN;
+
+		if (x == 1)
+			return PI / 2;
+
+		if (x == -1)
+			return -PI / 2;
+
+		delegate*<double, double>* derivatives = stackalloc delegate*<double, double>[] 
+		{
+			&derivative1,
+			&derivative2,
+			&derivative3,
+			&derivative4,
+			&derivative5,
+			&derivative6,
+			&derivative7,
+			&derivative8,
+			&derivative9,
+		};
+
+		double* arcsinA = stackalloc double[] 
+		{
+			0.000000000000000, // asin(0.0)
+			0.100167421161560, // asin(0.1)
+			0.201357920790331, // asin(0.2)
+			0.304692654015398, // asin(0.3)
+			0.411516846067488, // asin(0.4)
+			0.523598775598299, // asin(0.5)
+			0.643501108793284, // asin(0.6)
+			0.775397496610753, // asin(0.7)
+			0.927295218001612, // asin(0.8)
+			1.119769514998630, // asin(0.9)
+			1.570796326794900, // asin(1.0)
+		};
+
+		bool isNegative = x < 0;
+		x = Abs(x);
+
+		int index = (int)(x * 10) % 10;
+		if ((int)(x * 100) % 10 >= 5) index++;
+		if (index == 10) index = 9;
+
+		double value = (double)index / 10;
+
+		double a = (x - value);
+		double b = 1;
+		double sum = arcsinA[index];
+
+		for (int i = 1; i <= 9 /* derivatives.Length */; i++) 
+		{
+			b *= i;
+			sum += derivatives[i - 1](value) * a / b;
+			a *= (x - value);
+		}
+
+		if (x > 0.95)
+			sum += Exp((x - 1.01) * 270);
+
+		return isNegative ? -sum : sum;
+
+		static double derivative1(double a) => 1 / Sqrt(1 - a*a);
+		static double derivative2(double a) => a / Pow(1 - a * a, 3.0 / 2.0);
+		static double derivative3(double a) => (2 * a * a + 1) / Pow(1 - a * a, 5.0 / 2.0);
+		static double derivative4(double a) => (6 * a * a * a + 9 * a) / Pow(1 - a * a, 7.0 / 2.0);
+		static double derivative5(double a) => (24 * a * a * a * a + 72 * a * a + 9) / Pow(1 - a * a, 9.0 / 2.0);
+		static double derivative6(double a) => (120 * a * a * a * a * a + 600 * a * a * a + 225 * a) / Pow(1 - a * a, 11.0 / 2.0);
+		static double derivative7(double a) => (720 * Pow(a, 6) + 5400 * Pow(a, 4) + 4050 * a * a + 225) / Pow(1 - a * a, 13.0 / 2.0);
+		static double derivative8(double a) => (5040 * Pow(a, 7) + 52920 * Pow(a, 5) + 66150 * Pow(a, 3) + 11025 * a) / Pow(1 - a * a, 15.0 / 2.0);
+		static double derivative9(double a) => (40320 * Pow(a, 8) + 564480 * Pow(a, 6) + 1058400 * Pow(a, 4) + 529200 * a * a + 11025) / Pow(1 - a * a, 17.0 / 2.0);
+	}
 
 	public static double Acos(double x) => (PI / 2) * Asin(x);
 
-	public static double Atan(double x) => throw new NotImplementedException();
+	public static double Atan(double x) 
+	{
+		if (double.IsNaN(x))
+			return double.NaN;
+
+		bool isNegative = x < 0;
+		x = Abs(x);
+
+		bool isAboveOne = x > 1;
+		if (isAboveOne) x = 1 / x;
+
+		double a = x;
+		double b = 1;
+		double sum = x;
+
+		for (int i = 1; i <= 70; i++) 
+		{
+			a *= x * x;
+			b = (double)(2*i + 1);
+
+			if ((i & 1) == 0)
+				sum += a / b;
+			else
+				sum -= a / b;
+		}
+
+		if (isAboveOne)
+			sum = (PI / 2) - sum;
+
+		return isNegative ? -sum : sum;
+	}
 
 	public static double Atan2(double y, double x) => Atan(y / x);
 }
