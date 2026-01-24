@@ -171,10 +171,11 @@ public class List<T> : IList, IList<T>, IReadOnlyList<T>
 		{
 			bool equals = false;
 
-			if (item == null && array[i] != null)
+			if (item != null && array[i] != null)
+				equals = item!.Equals(array[i]);
+			else if (item == null && array[i] != null)
 				equals = array[i]!.Equals(item);
-
-			if (item != null && array[i] == null)
+			else if (item != null && array[i] == null)
 				equals = item!.Equals(array[i]);
 
 			if ((item == null && array[i] == null) || equals)

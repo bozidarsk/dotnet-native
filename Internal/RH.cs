@@ -62,55 +62,20 @@ internal static unsafe partial class RH
 	}
 
 
+	[RuntimeExport("RhpGetDispatchCellInfo")]
+	public static void RhpGetDispatchCellInfo(InterfaceDispatchCell* pCell, out DispatchCellInfo cellInfo) => cellInfo = pCell->GetDispatchCellInfo();
 
-	// [RuntimeExport("RhpCidResolve")]
-	// public static unsafe nint RhpCidResolve(nint callerTransitionBlockParam, nint pCell) 
+	[RuntimeExport("RhpUpdateDispatchCellCache")]
+	public static nint RhpUpdateDispatchCellCache(InterfaceDispatchCell* pCell, nint targetCode, MethodTable* pInstanceType, ref DispatchCellInfo cellInfo) 
+	{
+		return targetCode;
+	}
+
+	// [RuntimeExport("RhpSearchDispatchCellCache")]
+	// public static nint RhpSearchDispatchCellCache(InterfaceDispatchCell* pCell, MethodTable* pInstanceType) 
 	// {
-	// 	nint locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-	// 	#pragma warning disable 8500
-	// 	object pObject = *(object*)locationOfThisPointer;
-	// 	#pragma warning restore 8500
 
-
-	// 	DispatchCellInfo cellInfo;
-	// 	RhpGetDispatchCellInfo((InterfaceDispatchCell*)pCell, out cellInfo);
-
-	// 	MethodTable* pInstanceType = pObject.GetMethodTable();
-	// 	nint pTargetCode;
-
-	// 	switch (cellInfo.CellType) 
-	// 	{
-	// 		case DispatchCellType.InterfaceAndSlot:
-	// 			MethodTable* pResolvingInstanceType = pInstanceType;
-
-	// 			pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(
-	// 				pResolvingInstanceType,
-	// 				cellInfo.InterfaceType.ToPointer(),
-	// 				cellInfo.InterfaceSlot,
-	// 				ppGenericContext: null
-	// 			);
-
-	// 			// if (pTargetCode == 0 && pInstanceType->IsIDynamicInterfaceCastable)
-	// 			// {
-	// 			// 	var pfnGetInterfaceImplementation = 
-	// 			// 		(delegate*<object, MethodTable*, ushort, nint>)pInstanceType->GetClasslibFunction(
-	// 			// 			ClassLibFunctionId.IDynamicCastableGetInterfaceImplementation
-	// 			// 		);
-
-	// 			// 	pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType.ToPointer(), cellInfo.InterfaceSlot);
-	// 			// }
-
-	// 			break;
-	// 		case DispatchCellType.VTableOffset:
-	// 			pTargetCode = *(nint*)(((byte*)pInstanceType) + cellInfo.VTableOffset);
-	// 			break;
-	// 		default:
-	// 			throw new NotSupportedException("!SUPPORTS_NATIVE_METADATA_TYPE_LOADING_AND_SUPPORTS_TOKEN_BASED_DISPATCH_CELLS");
-	// 	}
-
-	// 	return (pTargetCode != 0) ? pTargetCode : throw new NullReferenceException();
 	// }
-
 
 
 	[RuntimeExport("RhBox")]
