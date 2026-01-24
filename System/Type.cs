@@ -10,9 +10,7 @@ public abstract class Type : MemberInfo
 {
 	public abstract RuntimeTypeHandle TypeHandle { get; }
 	public abstract string FullName { get; }
-	public abstract string Name { get; }
-
-
+	public abstract string Namespace { get; }
 
 
 	public static Type GetTypeFromHandle(RuntimeTypeHandle runtimeTypeHandle) => new TypeInfo(runtimeTypeHandle);

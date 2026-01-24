@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.Runtime;
 using Internal.NativeFormat;
@@ -11,61 +12,95 @@ public class TypeInfo : Type
 	private readonly RuntimeTypeHandle typeHandle;
 
 	public override RuntimeTypeHandle TypeHandle => typeHandle;
-	public override string FullName => Name;
+
+	public override MemberTypes MemberType => MemberTypes.TypeInfo;
+
+	public override int MetadataToken 
+	{
+		get 
+		{
+			if (!typeHandle.GetMetadata(out MetadataReader metadata, out TypeReference typeReference))
+				throw new BadImageFormatException();
+
+			return typeReference.Handle.GetHashCode();
+		}
+	}
 
 	public override string Name 
 	{
 		get 
 		{
-			if (!TryFind(out MetadataReader metadata, out Handle handle))
+			if (!typeHandle.GetMetadata(out MetadataReader metadata, out TypeReference typeReference))
 				throw new BadImageFormatException();
-
-			if (handle.HandleType != HandleType.TypeReference)
-				throw new BadImageFormatException();
-
-			var typeReference = metadata.GetTypeReference(handle.ToTypeReferenceHandle(metadata));
 
 			return typeReference.TypeName.GetConstantStringValue(metadata).Value;
 		}
 	}
 
-	private unsafe bool TryFind(out MetadataReader metadata, out Handle handle) 
+	public override string FullName 
 	{
-		MethodTable* mt = typeHandle.ToMethodTable();
-		var tm = mt->TypeManager.AsTypeManager();
-
-		nint metadataBlob = tm->GetModuleSection((ReadyToRunSectionType)(300 + ReflectionMapBlob.EmbeddedMetadata), out int metadataLength);
-		nint typeMapBlob = tm->GetModuleSection((ReadyToRunSectionType)(300 + ReflectionMapBlob.TypeMap), out int typeMapLength);
-		nint fixupsTableBlob = tm->GetModuleSection((ReadyToRunSectionType)(300 + ReflectionMapBlob.CommonFixupsTable), out int fixupsTableLength);
-
-		metadata = new MetadataReader(metadataBlob, metadataLength);
-		var typeMap = new NativeReader((byte*)typeMapBlob, (uint)typeMapLength);
-		var typeHash = new NativeHashtable(new NativeParser(typeMap, 0));
-
-		var allTypes = typeHash.EnumerateAllEntries();
-		NativeParser typeParser;
-
-		while (!(typeParser = allTypes.GetNext()).IsNull) 
+		get 
 		{
-			uint index = typeParser.GetUnsigned();
+			if (!typeHandle.GetMetadata(out MetadataReader metadata, out TypeReference typeReference))
+				throw new BadImageFormatException();
 
-			if (index >= fixupsTableLength / sizeof(uint))
-				throw new IndexOutOfRangeException();
+			return resolve(typeReference.ParentNamespaceOrType)! + typeReference.TypeName.GetConstantStringValue(metadata).Value;
 
-			var foundMt = MethodTable.SupportsRelativePointers ? (nint)RH.ReadRelPtr32(&((int*)fixupsTableBlob)[index]) : (nint)(((void**)fixupsTableBlob)[index]);
+			string? resolve(Handle handle) 
+			{
+				string? name;
 
-			if ((nint)mt != foundMt)
-				continue;
-
-			var token = typeParser.GetUnsigned();
-			handle = new Handle((int)token);
-
-			return true;
+				switch (handle.HandleType) 
+				{
+					case HandleType.NamespaceReference:
+						var namespaceReference = metadata.GetNamespaceReference(handle.ToNamespaceReferenceHandle(metadata));
+						name = resolve(namespaceReference.ParentScopeOrNamespace);
+						if (namespaceReference.Name.IsNull(metadata)) return name;
+						else if (name != null) return name + namespaceReference.Name.GetConstantStringValue(metadata).Value + ".";
+						else return namespaceReference.Name.GetConstantStringValue(metadata).Value + ".";
+					case HandleType.TypeReference:
+						var typeReference = metadata.GetTypeReference(handle.ToTypeReferenceHandle(metadata));
+						name = resolve(typeReference.ParentNamespaceOrType);
+						if (name != null) return name + typeReference.TypeName.GetConstantStringValue(metadata).Value + "+";
+						else return typeReference.TypeName.GetConstantStringValue(metadata).Value + "+";
+					default:
+						return null;
+				}
+			}
 		}
-
-		handle = default;
-		return false;
 	}
+
+	public override string Namespace 
+	{
+		get 
+		{
+			if (!typeHandle.GetMetadata(out MetadataReader metadata, out TypeReference typeReference))
+				throw new BadImageFormatException();
+
+			return resolve(typeReference.ParentNamespaceOrType)!;
+
+			string? resolve(Handle handle) 
+			{
+				string? name;
+
+				switch (handle.HandleType) 
+				{
+					case HandleType.NamespaceReference:
+						var namespaceReference = metadata.GetNamespaceReference(handle.ToNamespaceReferenceHandle(metadata));
+						name = resolve(namespaceReference.ParentScopeOrNamespace);
+						if (namespaceReference.Name.IsNull(metadata)) return name;
+						else if (name != null) return name +  "." + namespaceReference.Name.GetConstantStringValue(metadata).Value;
+						else return namespaceReference.Name.GetConstantStringValue(metadata).Value;
+					case HandleType.ScopeReference:
+						// var scopeReference = metadata.GetScopeReference(handle.ToScopeReferenceHandle(metadata));
+						// return scopeReference.Name.GetConstantStringValue(metadata).Value;
+					default:
+						return null;
+				}
+			}
+		}
+	}
+
 
 	[Intrinsic] public static bool operator == (TypeInfo left, TypeInfo right) => RuntimeTypeHandle.ToIntPtr(left.typeHandle) == RuntimeTypeHandle.ToIntPtr(right.typeHandle);
 	[Intrinsic] public static bool operator != (TypeInfo left, TypeInfo right) => !(left == right);
