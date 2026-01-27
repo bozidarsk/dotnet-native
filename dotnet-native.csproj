@@ -1,11 +1,6 @@
 <!--
 
-DEBUG
-BITS32 (default is 64bit arch)
-BIGENDIAN (default is le)
-CASTCACHE
 TARGET_UNIX
-TARGET_AMD64 or TARGET_X86 or TARGET_ARM64 or TARGET_ARM
 
 CS8603 (possible null reference return)
 CS8604 (possible null reference argument)
@@ -16,13 +11,13 @@ CS0649 (field is never assigned and it will have its default value)
 
 -->
 
-
 <Project DefaultTargets="Build" InitialTargets="MakeDirectories">
 
 	<Import Project="$(MSBuildThisFileDirectory)Directory.Build.props"/>
 
 	<PropertyGroup>
-		<BIN>$(MSBuildThisFileDir)bin</BIN>
+		<BIN>$(DotnetNativeBinPath)</BIN>
+		<CommonInputs>Directory.Build.props;Directory.Build.targets</CommonInputs>
 	</PropertyGroup>
 
 	<Target Name="MakeDirectories" Outputs="$(BIN)">
@@ -33,11 +28,11 @@ CS0649 (field is never assigned and it will have its default value)
 		<RemoveDir Directories="$(BIN)"/>
 	</Target>
 
-	<Target Name="Build" Inputs="@(Compile);@(Assemble)" Outputs="$(BIN)/dotnet.dll;$(BIN)/libdotnet.a">
+	<Target Name="Compile" Inputs="$(CommonInputs);@(Compile)" Outputs="$(BIN)/dotnet.dll">
 		<PropertyGroup>
 			<ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
-			<DefineConstants>TARGET_AMD64;TARGET_UNIX</DefineConstants>
-			<DisabledWarnings>CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
+			<DefineConstants>$(DefineConstants);TARGET_UNIX</DefineConstants>
+			<DisabledWarnings>$(DisabledWarnings);CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
 			<FileAlignment>512</FileAlignment>
 			<GenerateFullPaths>true</GenerateFullPaths>
 			<HighEntropyVA>true</HighEntropyVA>
@@ -45,8 +40,6 @@ CS0649 (field is never assigned and it will have its default value)
 			<RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
 			<WarningLevel>9999</WarningLevel>
 		</PropertyGroup>
-
-		<Message Text="Building runtime..." Importance="High"/>
 
 		<Csc 
 			Sources="@(Compile)"
@@ -76,16 +69,18 @@ CS0649 (field is never assigned and it will have its default value)
 			Nullable="enable"
 			Optimize="true"
 		/>
-		<Message Text="Runtime -> $(BIN)/dotnet.dll" Importance="High"/>
+	</Target>
 
-		<Exec Command="$(DotnetPath)/tools/ilc $(BIN)/dotnet.dll -o $(BIN)/dotnet.o --map $(BIN)/dotnet.xml $(ILCFLAGS)"/>
-		<Message Text="           $(BIN)/dotnet.o" Importance="High"/>
+	<Target Name="ILCompile" DependsOnTargets="Compile" Inputs="$(CommonInputs);$(BIN)/dotnet.dll" Outputs="$(BIN)/dotnet.dll.o;$(BIN)/dotnet.xml">
+		<Exec Command="$(DotnetPath)/tools/ilc $(BIN)/dotnet.dll -o $(BIN)/dotnet.dll.o --map $(BIN)/dotnet.xml $(ILCFLAGS)"/>
+	</Target>
 
-		<Exec Command="nasm %(Assemble.Identity) -o $(BIN)/$([System.IO.Path]::GetFileName('%(Assemble.Identity)')).o $(ASMFLAGS)"/>
-		<Message Text="           $(BIN)/$([System.IO.Path]::GetFileName('%(Assemble.Identity)')).o" Importance="High"/>
+	<Target Name="Assemble" Inputs="$(CommonInputs);@(Assemble)" Outputs="@(Assemble->'$(BIN)/%(Filename)%(Extension).o')">
+		<Exec Command="nasm %(Assemble.Identity) -o $(BIN)/%(Filename)%(Extension).o $(ASMFLAGS)"/>
+	</Target>
 
+	<Target Name="Build" DependsOnTargets="Compile;ILCompile;Assemble" Inputs="$(CommonInputs)" Outputs="$(BIN)/libdotnet.a">
 		<Exec Command="ar rcs $(BIN)/libdotnet.a $(BIN)/*.o"/>
-		<Message Text="           $(BIN)/libdotnet.a" Importance="High"/>
 	</Target>
 
 	<ItemGroup>

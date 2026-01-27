@@ -1,20 +1,24 @@
+<!--
+
+DEBUG
+BITS32 (default is 64bit arch)
+BIGENDIAN (default is le)
+CASTCACHE
+TARGET_AMD64 or TARGET_X86 or TARGET_ARM64 or TARGET_ARM
+
+-->
+
 <Project>
 	<PropertyGroup>
+		<DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
+		<DisabledWarnings>$(DisabledWarnings)</DisabledWarnings>
 		<DotnetNativeBinPath>$(MSBuildThisFileDirectory)bin</DotnetNativeBinPath>
-		<Configuration>Release</Configuration> <!-- Release|Debug -->
-		<Debugger>none</Debugger> <!-- none|gdb -->
 		<DotnetVersion>8.0.0</DotnetVersion> <!-- $([System.Environment]::Version) -->
-		<DotnetPath>~/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>
-		<Platform>x64</Platform>
+		<Platform>x64</Platform> <!-- x86 or x64 or arm or arm64 -->
 		<ASMFLAGS>-f elf64</ASMFLAGS>
-		<ILCFLAGS>--targetos linux --targetarch x64 --instruction-set x86-x64 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --noinlinetls --systemmodule dotnet --nativelib --multifile --root dotnet --generateunmanagedentrypoints dotnet</ILCFLAGS>
-		<LDFLAGS>-m elf_x86_64 -T linker.ld -static -no-pie -nostdlib -L $(DotnetNativeBinPath)</LDFLAGS>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<RunCommand>dotnet</RunCommand>
-		<RunArguments>msbuild -t:Run -p:Configuration=$(Configuration) -p:Debugger=$(Debugger)</RunArguments>
-		<TargetFramework>net8.0</TargetFramework>
-		<OutputType>library</OutputType>
+		<ILCFLAGS>--targetos linux --targetarch $(Platform) --instruction-set x86-x64 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --noinlinetls --systemmodule dotnet --nativelib --multifile --root dotnet --generateunmanagedentrypoints dotnet</ILCFLAGS>
+		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' == 'true'">$(HOME)</HomePath>
+		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' != 'true'">$(USERPROFILE)</HomePath>
+		<DotnetPath>$(HomePath)/.nuget/packages/runtime.linux-$(Platform).microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>
 	</PropertyGroup>
 </Project>

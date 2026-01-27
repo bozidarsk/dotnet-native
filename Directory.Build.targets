@@ -1,6 +1,0 @@
-<Project>
-	<Target Name="ComputeRunArguments">
-		<CreateProperty Value="$()">
-		</CreateProperty>
-	</Target>
-</Project>
