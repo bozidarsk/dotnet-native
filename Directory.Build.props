@@ -10,13 +10,14 @@ TARGET_AMD64 or TARGET_X86 or TARGET_ARM64 or TARGET_ARM
 
 <Project>
 	<PropertyGroup>
+		<SystemModule>System.Private.CoreLib</SystemModule>
 		<DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
 		<DisabledWarnings>$(DisabledWarnings)</DisabledWarnings>
 		<DotnetNativeBinPath>$(MSBuildThisFileDirectory)bin</DotnetNativeBinPath>
 		<DotnetVersion>8.0.0</DotnetVersion> <!-- $([System.Environment]::Version) -->
 		<Platform>x64</Platform> <!-- x86 or x64 or arm or arm64 -->
 		<ASMFLAGS>-f elf64</ASMFLAGS>
-		<ILCFLAGS>--targetos linux --targetarch $(Platform) --instruction-set x86-x64 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --noinlinetls --systemmodule dotnet --nativelib --multifile --root dotnet --generateunmanagedentrypoints dotnet</ILCFLAGS>
+		<ILCFLAGS>--targetos linux --targetarch $(Platform) --instruction-set x86-x64 -g --gdwarf-5 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --systemmodule $(SystemModule) --nativelib --multifile --root $(SystemModule) -O</ILCFLAGS>
 		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' == 'true'">$(HOME)</HomePath>
 		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' != 'true'">$(USERPROFILE)</HomePath>
 		<DotnetPath>$(HomePath)/.nuget/packages/runtime.linux-$(Platform).microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>

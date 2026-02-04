@@ -17,7 +17,7 @@ CS0649 (field is never assigned and it will have its default value)
 
 	<PropertyGroup>
 		<BIN>$(DotnetNativeBinPath)</BIN>
-		<CommonInputs>Directory.Build.props;Directory.Build.targets</CommonInputs>
+		<CommonInputs>$(MSBuildThisFileDirectory)dotnet-native.csproj;$(MSBuildThisFileDirectory)Directory.Build.props</CommonInputs>
 	</PropertyGroup>
 
 	<Target Name="MakeDirectories" Outputs="$(BIN)">
@@ -28,7 +28,7 @@ CS0649 (field is never assigned and it will have its default value)
 		<RemoveDir Directories="$(BIN)"/>
 	</Target>
 
-	<Target Name="Compile" Inputs="$(CommonInputs);@(Compile)" Outputs="$(BIN)/dotnet.dll">
+	<Target Name="Compile" Inputs="$(CommonInputs);@(Compile)" Outputs="$(BIN)/$(SystemModule).dll">
 		<PropertyGroup>
 			<ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
 			<DefineConstants>$(DefineConstants);TARGET_UNIX</DefineConstants>
@@ -44,7 +44,7 @@ CS0649 (field is never assigned and it will have its default value)
 		<Csc 
 			Sources="@(Compile)"
 			TargetType="library"
-			OutputAssembly="$(BIN)/dotnet.dll"
+			OutputAssembly="$(BIN)/$(SystemModule).dll"
 			References=""
 
 			ChecksumAlgorithm="$(ChecksumAlgorithm)"
@@ -60,7 +60,8 @@ CS0649 (field is never assigned and it will have its default value)
 
 			AllowUnsafeBlocks="true"
 			CheckForOverflowUnderflow="false"
-			DebugType="portable"
+			DebugType="full"
+			EmitDebugInformation="true"
 			Deterministic="true"
 			NoConfig="true"
 			NoLogo="true"
@@ -71,8 +72,8 @@ CS0649 (field is never assigned and it will have its default value)
 		/>
 	</Target>
 
-	<Target Name="ILCompile" DependsOnTargets="Compile" Inputs="$(CommonInputs);$(BIN)/dotnet.dll" Outputs="$(BIN)/dotnet.dll.o;$(BIN)/dotnet.xml">
-		<Exec Command="$(DotnetPath)/tools/ilc $(BIN)/dotnet.dll -o $(BIN)/dotnet.dll.o --map $(BIN)/dotnet.xml $(ILCFLAGS)"/>
+	<Target Name="ILCompile" DependsOnTargets="Compile" Inputs="$(CommonInputs);$(BIN)/$(SystemModule).dll" Outputs="$(BIN)/$(SystemModule).dll.o;$(BIN)/$(SystemModule).xml;$(BIN)/$(SystemModule).log">
+		<Exec Command="$(DotnetPath)/tools/ilc $(BIN)/$(SystemModule).dll -o $(BIN)/$(SystemModule).dll.o --map $(BIN)/$(SystemModule).xml --metadatalog $(BIN)/$(SystemModule).log $(ILCFLAGS)"/>
 	</Target>
 
 	<Target Name="Assemble" Inputs="$(CommonInputs);@(Assemble)" Outputs="@(Assemble->'$(BIN)/%(Filename)%(Extension).o')">
