@@ -47,10 +47,6 @@
 	</Target>
 
 	<Target Name="ILCompile" DependsOnTargets="Compile" Inputs="$(BUILD)/$(AssemblyName).dll" Outputs="$(BUILD)/$(AssemblyName).dll.o;$(BUILD)/$(AssemblyName).xml;$(BUILD)/$(AssemblyName).log">
-		<Message Text="$(DotnetPath)" Importance="high"/>
-		<Message Text="$(BUILD)" Importance="high"/>
-		<Message Text="$(AssemblyName)" Importance="high"/>
-
 		<Exec Command="$(DotnetPath)/tools/ilc $(BUILD)/$(AssemblyName).dll -o $(BUILD)/$(AssemblyName).dll.o --map $(BUILD)/$(AssemblyName).xml --metadatalog $(BUILD)/$(AssemblyName).log --targetos linux --targetarch $(Platform) -g --gdwarf-5 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --systemmodule $(SystemModule) --nativelib --multifile --root $(AssemblyName) -O"/>
 	</Target>
 

@@ -31,8 +31,8 @@ CS0649 (field is never assigned and it will have its default value)
 		<AssemblyName>$(SystemModule)</AssemblyName>
 	</PropertyGroup>
 
-	<Target Name="Pack" AfterTargets="Build" Outputs="$(BUILD)/lib$(AssemblyName).a">
-		<Exec Command="ar rcs $(BUILD)/lib$(AssemblyName).a $(BUILD)/*.o"/>
+	<Target Name="Pack" AfterTargets="Build" Outputs="$(BaseOutputPath)/lib$(AssemblyName).a">
+		<Exec Command="ar rcs $(BaseOutputPath)/lib$(AssemblyName).a $(BaseOutputPath)/*.o"/>
 	</Target>
 
 	<ItemGroup>
