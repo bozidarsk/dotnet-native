@@ -1,6 +1,10 @@
 <!--
 
-TARGET_UNIX
+DEBUG
+BITS32 (default is 64bit arch)
+BIGENDIAN (default is le)
+CASTCACHE
+TARGET_AMD64 or TARGET_X86 or TARGET_ARM64 or TARGET_ARM
 
 CS8603 (possible null reference return)
 CS8604 (possible null reference argument)
@@ -11,77 +15,24 @@ CS0649 (field is never assigned and it will have its default value)
 
 -->
 
-<Project DefaultTargets="Build" InitialTargets="MakeDirectories">
+<Project>
 
 	<Import Project="$(MSBuildThisFileDirectory)Directory.Build.props"/>
 
 	<PropertyGroup>
-		<BIN>$(DotnetNativeBinPath)</BIN>
-		<CommonInputs>$(MSBuildThisFileDirectory)dotnet-native.csproj;$(MSBuildThisFileDirectory)Directory.Build.props</CommonInputs>
+		<TargetType>library</TargetType>
+		<Platform>x64</Platform> <!-- x86 or x64 or arm or arm64 -->
+		<DotnetVersion>8.0.0</DotnetVersion> <!-- $([System.Environment]::Version) -->
+		<DefineConstants>$(DefineConstants);TARGET_AMD64;TARGET_UNIX</DefineConstants>
+		<DisabledWarnings>$(DisabledWarnings);CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+		<Nullable>enable</Nullable>
+		<AssemblyName>$(SystemModule)</AssemblyName>
 	</PropertyGroup>
 
-	<Target Name="MakeDirectories" Outputs="$(BIN)">
-		<MakeDir Directories="$(BIN)"/>
-	</Target>
-
-	<Target Name="Clean">
-		<RemoveDir Directories="$(BIN)"/>
-	</Target>
-
-	<Target Name="Compile" Inputs="$(CommonInputs);@(Compile)" Outputs="$(BIN)/$(SystemModule).dll">
-		<PropertyGroup>
-			<ChecksumAlgorithm>SHA256</ChecksumAlgorithm>
-			<DefineConstants>$(DefineConstants);TARGET_UNIX</DefineConstants>
-			<DisabledWarnings>$(DisabledWarnings);CS8603;CS8604;CS8618;CS8625;CS0164;CS0649</DisabledWarnings>
-			<FileAlignment>512</FileAlignment>
-			<GenerateFullPaths>true</GenerateFullPaths>
-			<HighEntropyVA>true</HighEntropyVA>
-			<LangVersion>latest</LangVersion>
-			<RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-			<WarningLevel>9999</WarningLevel>
-		</PropertyGroup>
-
-		<Csc 
-			Sources="@(Compile)"
-			TargetType="library"
-			OutputAssembly="$(BIN)/$(SystemModule).dll"
-			References=""
-
-			ChecksumAlgorithm="$(ChecksumAlgorithm)"
-			DefineConstants="$(DefineConstants)"
-			DisabledWarnings="$(DisabledWarnings)"
-			FileAlignment="$(FileAlignment)"
-			GenerateFullPaths="$(GenerateFullPaths)"
-			HighEntropyVA="$(HighEntropyVA)"
-			LangVersion="$(LangVersion)"
-			Platform="$(Platform)"
-			RuntimeMetadataVersion="$(RuntimeMetadataVersion)"
-			WarningLevel="$(WarningLevel)"
-
-			AllowUnsafeBlocks="true"
-			CheckForOverflowUnderflow="false"
-			DebugType="full"
-			EmitDebugInformation="true"
-			Deterministic="true"
-			NoConfig="true"
-			NoLogo="true"
-			NoStandardLib="true"
-			NoWin32Manifest="true"
-			Nullable="enable"
-			Optimize="true"
-		/>
-	</Target>
-
-	<Target Name="ILCompile" DependsOnTargets="Compile" Inputs="$(CommonInputs);$(BIN)/$(SystemModule).dll" Outputs="$(BIN)/$(SystemModule).dll.o;$(BIN)/$(SystemModule).xml;$(BIN)/$(SystemModule).log">
-		<Exec Command="$(DotnetPath)/tools/ilc $(BIN)/$(SystemModule).dll -o $(BIN)/$(SystemModule).dll.o --map $(BIN)/$(SystemModule).xml --metadatalog $(BIN)/$(SystemModule).log $(ILCFLAGS)"/>
-	</Target>
-
-	<Target Name="Assemble" Inputs="$(CommonInputs);@(Assemble)" Outputs="@(Assemble->'$(BIN)/%(Filename)%(Extension).o')">
-		<Exec Command="nasm %(Assemble.Identity) -o $(BIN)/%(Filename)%(Extension).o $(ASMFLAGS)"/>
-	</Target>
-
-	<Target Name="Build" DependsOnTargets="Compile;ILCompile;Assemble" Inputs="$(CommonInputs)" Outputs="$(BIN)/libdotnet.a">
-		<Exec Command="ar rcs $(BIN)/libdotnet.a $(BIN)/*.o"/>
+	<Target Name="Pack" AfterTargets="Build" Outputs="$(BUILD)/lib$(AssemblyName).a">
+		<Exec Command="ar rcs $(BUILD)/lib$(AssemblyName).a $(BUILD)/*.o"/>
 	</Target>
 
 	<ItemGroup>
@@ -92,5 +43,7 @@ CS0649 (field is never assigned and it will have its default value)
 	<ItemGroup>
 		<Assemble Include="$(MSBuildThisFileDirectory)arch/$(Platform)/*.asm"/>
 	</ItemGroup>
+
+	<Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets"/>
 
 </Project>

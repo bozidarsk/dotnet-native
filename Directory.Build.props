@@ -1,25 +1,9 @@
-<!--
-
-DEBUG
-BITS32 (default is 64bit arch)
-BIGENDIAN (default is le)
-CASTCACHE
-TARGET_AMD64 or TARGET_X86 or TARGET_ARM64 or TARGET_ARM
-
--->
-
 <Project>
 	<PropertyGroup>
+		<BaseOutputPath Condition="'$(BaseOutputPath)' == ''">$(MSBuildThisFileDirectory)bin</BaseOutputPath>
+		<AssemblyName Condition="'$(AssemblyName)' == ''">$(MSBuildProjectName)</AssemblyName>
+		<DefineConstants>NET;NET10_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER</DefineConstants>
+		<DisabledWarnings></DisabledWarnings>
 		<SystemModule>System.Private.CoreLib</SystemModule>
-		<DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
-		<DisabledWarnings>$(DisabledWarnings)</DisabledWarnings>
-		<DotnetNativeBinPath>$(MSBuildThisFileDirectory)bin</DotnetNativeBinPath>
-		<DotnetVersion>8.0.0</DotnetVersion> <!-- $([System.Environment]::Version) -->
-		<Platform>x64</Platform> <!-- x86 or x64 or arm or arm64 -->
-		<ASMFLAGS>-f elf64</ASMFLAGS>
-		<ILCFLAGS>--targetos linux --targetarch $(Platform) --instruction-set x86-x64 -g --gdwarf-5 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --systemmodule $(SystemModule) --nativelib --multifile --root $(SystemModule) -O</ILCFLAGS>
-		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' == 'true'">$(HOME)</HomePath>
-		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' != 'true'">$(USERPROFILE)</HomePath>
-		<DotnetPath>$(HomePath)/.nuget/packages/runtime.linux-$(Platform).microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>
 	</PropertyGroup>
 </Project>

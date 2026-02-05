@@ -1,0 +1,71 @@
+<Project DefaultTargets="Build" InitialTargets="MakeDirectories">
+
+	<PropertyGroup>
+		<BUILD>$(BaseOutputPath)</BUILD>
+		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' == 'true'">$(HOME)</HomePath>
+		<HomePath Condition="'$([MSBuild]::IsOSUnixLike())' != 'true'">$(USERPROFILE)</HomePath>
+		<DotnetPath>$(HomePath)/.nuget/packages/runtime.linux-$(Platform).microsoft.dotnet.ilcompiler/$(DotnetVersion)</DotnetPath>
+	</PropertyGroup>
+
+	<Target Name="MakeDirectories" Outputs="$(BUILD)">
+		<MakeDir Directories="$(BUILD)"/>
+	</Target>
+
+	<Target Name="Clean">
+		<RemoveDir Directories="$(BUILD)"/>
+	</Target>
+
+	<Target Name="Compile" Inputs="@(Compile)" Outputs="$(BUILD)/$(AssemblyName).dll">
+		<Csc 
+			Sources="@(Compile)"
+			References="@(References)"
+			TargetType="$(TargetType)"
+			OutputAssembly="$(BUILD)/$(AssemblyName).dll"
+			Platform="$(Platform)"
+			DefineConstants="$(DefineConstants)"
+			DisabledWarnings="$(DisabledWarnings)"
+			AllowUnsafeBlocks="$(AllowUnsafeBlocks)"
+			CheckForOverflowUnderflow="$(CheckForOverflowUnderflow)"
+			Nullable="$(Nullable)"
+
+			ChecksumAlgorithm="SHA256"
+			DebugType="full"
+			Deterministic="true"
+			EmitDebugInformation="true"
+			FileAlignment="512"
+			GenerateFullPaths="true"
+			HighEntropyVA="true"
+			LangVersion="latest"
+			NoConfig="true"
+			NoLogo="true"
+			NoStandardLib="true"
+			NoWin32Manifest="true"
+			Optimize="true"
+			RuntimeMetadataVersion="v4.0.30319"
+			WarningLevel="999"
+		/>
+	</Target>
+
+	<Target Name="ILCompile" DependsOnTargets="Compile" Inputs="$(BUILD)/$(AssemblyName).dll" Outputs="$(BUILD)/$(AssemblyName).dll.o;$(BUILD)/$(AssemblyName).xml;$(BUILD)/$(AssemblyName).log">
+		<Message Text="$(DotnetPath)" Importance="high"/>
+		<Message Text="$(BUILD)" Importance="high"/>
+		<Message Text="$(AssemblyName)" Importance="high"/>
+
+		<Exec Command="$(DotnetPath)/tools/ilc $(BUILD)/$(AssemblyName).dll -o $(BUILD)/$(AssemblyName).dll.o --map $(BUILD)/$(AssemblyName).xml --metadatalog $(BUILD)/$(AssemblyName).log --targetos linux --targetarch $(Platform) -g --gdwarf-5 --nopreinitstatics --completetypemetadata --reflectiondata all --stacktracedata --scanreflection --scan --systemmodule $(SystemModule) --nativelib --multifile --root $(AssemblyName) -O"/>
+	</Target>
+
+	<Target Name="Assemble" Inputs="@(Assemble)" Outputs="@(Assemble->'$(BUILD)/%(Filename)%(Extension).o')">
+		<PropertyGroup>
+			<Assembler Condition="'$(Platform)' == 'x86' || '$(Platform)' == 'x64'">nasm</Assembler>
+			<Assembler Condition="'$(Platform)' == 'arm'">arm-none-eabi-as</Assembler>
+			<Assembler Condition="'$(Platform)' == 'arm64'">aarch64-linux-gnu-as</Assembler>
+			<Flags Condition="'$(Platform)' == 'x86'">-f elf32</Flags>
+			<Flags Condition="'$(Platform)' == 'x64'">-f elf64</Flags>
+		</PropertyGroup>
+
+		<Exec Command="$(Assembler) %(Assemble.Identity) -o $(BUILD)/%(Filename)%(Extension).o -g $(Flags)"/>
+	</Target>
+
+	<Target Name="Build" DependsOnTargets="Compile;ILCompile;Assemble"/>
+
+</Project>
