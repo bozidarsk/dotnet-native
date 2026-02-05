@@ -52,7 +52,7 @@
 
 	<Target Name="Assemble" Inputs="@(Assemble)" Outputs="@(Assemble->'$(BUILD)/%(Filename)%(Extension).o')">
 		<PropertyGroup>
-			<Assembler Condition="'$(Platform)' == 'x86' || '$(Platform)' == 'x64'">nasm</Assembler>
+			<Assembler Condition="'$(Platform)' == 'x86' Or '$(Platform)' == 'x64'">nasm</Assembler>
 			<Assembler Condition="'$(Platform)' == 'arm'">arm-none-eabi-as</Assembler>
 			<Assembler Condition="'$(Platform)' == 'arm64'">aarch64-linux-gnu-as</Assembler>
 			<Flags Condition="'$(Platform)' == 'x86'">-f elf32</Flags>
